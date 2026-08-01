@@ -78,6 +78,12 @@ interface AppState {
   showLabels:       boolean;
   isSessionActive:  boolean; // true once startSession() succeeds → switch to tracker screen
 
+  // ── Toast ─────────────────────────────────────────────────────
+  _toastMsg: string | null; // set to show a toast; component reads + clears it
+
+  // ── Route geometry (GeoJSON from OSRM) ───────────────────────
+  routeGeometry: object | null;
+
   // ── Actions ───────────────────────────────────────────────────
   set: (partial: Partial<Omit<AppState, 'set'>>) => void;
   recomputeMemberNumbers: () => void;
@@ -112,6 +118,8 @@ const initialState: Omit<AppState, 'set' | 'recomputeMemberNumbers' | 'reset'> =
   membersCollapsed: false,
   showLabels:       true,
   isSessionActive:  false,
+  _toastMsg:        null,
+  routeGeometry:    null,
 };
 
 // ─── Zustand Store ────────────────────────────────────────────────
