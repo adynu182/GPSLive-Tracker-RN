@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function MembersList({ onFocusMember }: Props) {
-  const scheme  = useColorScheme() ?? 'light';
+  const scheme  = useColorScheme() === 'dark' ? 'dark' : 'light';
   const C       = Colors[scheme];
 
   const members       = useStore((s) => s.members);

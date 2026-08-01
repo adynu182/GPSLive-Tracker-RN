@@ -26,7 +26,7 @@ MapboxGL.setAccessToken('');
 
 export default function TrackerScreen() {
   const router  = useRouter();
-  const scheme  = useColorScheme() ?? 'light';
+  const scheme  = useColorScheme() === 'dark' ? 'dark' : 'light';
   const C       = Colors[scheme];
 
   const isSessionActive = useStore((s) => s.isSessionActive);

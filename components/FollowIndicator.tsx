@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function FollowIndicator({ onCancel }: Props) {
-  const scheme      = useColorScheme() ?? 'light';
+  const scheme      = useColorScheme() === 'dark' ? 'dark' : 'light';
   const C           = Colors[scheme];
   const followedUid = useStore((s) => s.followedUid);
   const members     = useStore((s) => s.members);

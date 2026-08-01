@@ -20,7 +20,9 @@ export async function saveUserData(data: {
   if (data.myEmoji) pairs.push([KEY_EMOJI, data.myEmoji]);
   if (data.myColor) pairs.push([KEY_COLOR, data.myColor]);
   if (data.roomId)  pairs.push([KEY_ROOM,  data.roomId]);
-  if (pairs.length) await AsyncStorage.multiSet(pairs);
+  if (pairs.length) {
+    await Promise.all(pairs.map(([k, v]) => AsyncStorage.setItem(k, v)));
+  }
 }
 
 // ─── Muat preferensi user saat app dibuka ─────────────────────────
@@ -29,8 +31,13 @@ export async function loadUserData(): Promise<{
   myEmoji: string | null;
   myColor: string | null;
 }> {
-  const result = await AsyncStorage.multiGet([KEY_NAME, KEY_EMOJI, KEY_COLOR]);
-  const map = Object.fromEntries(result.map(([k, v]) => [k, v]));
+  const result = await Promise.all(
+    [KEY_NAME, KEY_EMOJI, KEY_COLOR].map(async (k) => {
+      const v = await AsyncStorage.getItem(k);
+      return [k, v] as [string, string | null];
+    })
+  );
+  const map = Object.fromEntries(result);
   const savedColor = map[KEY_COLOR];
   return {
     myName:  map[KEY_NAME] || null,
@@ -46,7 +53,10 @@ export async function getSavedRoomCode(): Promise<string> {
 
 // ─── Clear name + emoji saat logout ──────────────────────────────
 export async function clearSessionData(): Promise<void> {
-  await AsyncStorage.multiRemove([KEY_NAME, KEY_EMOJI]);
+  await Promise.all([
+    AsyncStorage.removeItem(KEY_NAME),
+    AsyncStorage.removeItem(KEY_EMOJI),
+  ]);
 }
 
 // ─── Device ID unik per perangkat (bukan per sesi) ───────────────

@@ -21,7 +21,7 @@ export default function Toolbar({
   onToggleRoute,
   onFitAll,
 }: Props) {
-  const scheme     = useColorScheme() ?? 'light';
+  const scheme     = useColorScheme() === 'dark' ? 'dark' : 'light';
   const C          = Colors[scheme];
   const sharingOn  = useStore((s) => s.sharingOn);
   const navMode    = useStore((s) => s.navMode);

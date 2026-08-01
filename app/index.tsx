@@ -20,7 +20,7 @@ import Toast from 'react-native-toast-message';
 
 export default function JoinScreen() {
   const router = useRouter();
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const C = Colors[scheme];
 
   const [tab,        setTab]        = useState<'create' | 'join'>('create');

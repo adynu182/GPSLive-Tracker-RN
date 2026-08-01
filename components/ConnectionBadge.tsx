@@ -5,7 +5,7 @@ import { Colors } from '../src/theme';
 import { useStore } from '../src/state';
 
 export default function ConnectionBadge() {
-  const scheme    = useColorScheme() ?? 'light';
+  const scheme    = useColorScheme() === 'dark' ? 'dark' : 'light';
   const C         = Colors[scheme];
   const connected = useStore((s) => s.connected);
 
