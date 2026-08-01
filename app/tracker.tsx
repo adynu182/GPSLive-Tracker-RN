@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import MapboxGL from '@rnmapbox/maps';
+import MapLibreGL from '@maplibre/maplibre-react-native';
 
 import { Colors } from '../src/theme';
 import { useStore } from '../src/state';
@@ -21,8 +21,8 @@ import FollowIndicator from '../components/FollowIndicator';
 import ToastDriver from '../components/Toast';
 import Toast from 'react-native-toast-message';
 
-// Set Mapbox token (public, needed by @rnmapbox/maps even for non-Mapbox styles)
-MapboxGL.setAccessToken('');
+// Set Mapbox token (public, needed by @maplibre/maplibre-react-native even for non-Mapbox styles)
+MapLibreGL.setAccessToken(null);
 
 export default function TrackerScreen() {
   const router  = useRouter();

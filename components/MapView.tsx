@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { StyleSheet } from 'react-native';
-import MapboxGL from '@rnmapbox/maps';
+import MapLibreGL from '@maplibre/maplibre-react-native';
 import { useStore, getState } from '../src/state';
 import { getCurrentMapStyleUrl } from '../src/theme';
 import MemberMarker from './MemberMarker';
@@ -14,8 +14,8 @@ interface Props {
 }
 
 export default function MapView({ onMapDrag, onMapTap }: Props) {
-  const cameraRef = useRef<MapboxGL.Camera>(null);
-  const mapRef    = useRef<MapboxGL.MapView>(null);
+  const cameraRef = useRef<MapLibreGL.Camera>(null);
+  const mapRef    = useRef<MapLibreGL.MapView>(null);
 
   const members    = useStore((s) => s.members);
   const myId       = useStore((s) => s.myId);
@@ -84,7 +84,7 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
   }, [onMapDrag]);
 
   return (
-    <MapboxGL.MapView
+    <MapLibreGL.MapView
       ref={mapRef}
       style={styles.map}
       styleURL={styleUrl}
@@ -94,7 +94,7 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
       compassFadeWhenNorth
       scaleBarEnabled={false}
     >
-      <MapboxGL.Camera
+      <MapLibreGL.Camera
         ref={cameraRef}
         defaultSettings={{
           centerCoordinate: [106.827, -6.175], // Jakarta
@@ -107,19 +107,19 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
         const m = members[uid];
         if (m.lat == null || m.lng == null) return null;
         return (
-          <MapboxGL.PointAnnotation
+          <MapLibreGL.PointAnnotation
             key={uid}
             id={`member-${uid}`}
             coordinate={[m.lng, m.lat]}
           >
             <MemberMarker uid={uid} />
-          </MapboxGL.PointAnnotation>
+          </MapLibreGL.PointAnnotation>
         );
       })}
 
       {/* Route polyline + destination pin */}
       <RouteLayer />
-    </MapboxGL.MapView>
+    </MapLibreGL.MapView>
   );
 }
 

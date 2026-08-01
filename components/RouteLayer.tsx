@@ -1,5 +1,5 @@
 import React from 'react';
-import MapboxGL from '@rnmapbox/maps';
+import MapLibreGL from '@maplibre/maplibre-react-native';
 import { useStore } from '../src/state';
 
 /**
@@ -17,7 +17,7 @@ export default function RouteLayer() {
     <>
       {/* Route polyline */}
       {routeGeometry && (
-        <MapboxGL.ShapeSource
+        <MapLibreGL.ShapeSource
           id="route-src"
           shape={{
             type: 'Feature',
@@ -25,7 +25,7 @@ export default function RouteLayer() {
             geometry: routeGeometry as any,
           }}
         >
-          <MapboxGL.LineLayer
+          <MapLibreGL.LineLayer
             id="route-lyr"
             style={{
               lineColor:   '#4a90d9',
@@ -35,16 +35,16 @@ export default function RouteLayer() {
               lineJoin:    'round',
             }}
           />
-        </MapboxGL.ShapeSource>
+        </MapLibreGL.ShapeSource>
       )}
 
       {/* Destination pin */}
-      <MapboxGL.PointAnnotation
+      <MapLibreGL.PointAnnotation
         id="route-dest"
         coordinate={[routeDest.lng, routeDest.lat]}
       >
-        <MapboxGL.Callout title="Tujuan" />
-      </MapboxGL.PointAnnotation>
+        <MapLibreGL.Callout title="Tujuan" />
+      </MapLibreGL.PointAnnotation>
     </>
   );
 }
