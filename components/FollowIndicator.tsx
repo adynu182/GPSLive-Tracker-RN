@@ -4,6 +4,8 @@ import { useColorScheme } from 'react-native';
 import { Colors } from '../src/theme';
 import { useStore } from '../src/state';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 interface Props {
   onCancel: () => void;
 }
@@ -11,14 +13,17 @@ interface Props {
 export default function FollowIndicator({ onCancel }: Props) {
   const scheme      = useColorScheme() === 'dark' ? 'dark' : 'light';
   const C           = Colors[scheme];
+  const insets      = useSafeAreaInsets();
   const followedUid = useStore((s) => s.followedUid);
   const members     = useStore((s) => s.members);
 
   if (!followedUid || !members[followedUid]) return null;
   const m = members[followedUid];
 
+  const topPos = Math.max(insets.top, 16) + 12;
+
   return (
-    <View style={[styles.wrap, { backgroundColor: C.primary + 'EE', shadowColor: C.primary }]}>
+    <View style={[styles.wrap, { top: topPos, backgroundColor: C.primary + 'EE', shadowColor: C.primary }]}>
       <Text style={styles.text}>
         {m.emoji} Mengikuti {m.name}
       </Text>

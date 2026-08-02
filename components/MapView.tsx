@@ -23,8 +23,11 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
   const navMode       = useStore((s) => s.navMode);
   const followedUid   = useStore((s) => s.followedUid);
   const firstFix      = useStore((s) => s.firstFix);
-  const routeMode     = useStore((s) => s.routeMode);
-  const fitAllCounter = useStore((s) => s.fitAllCounter);
+  const routeMode           = useStore((s) => s.routeMode);
+  const fitAllCounter       = useStore((s) => s.fitAllCounter);
+  const zoomInCounter       = useStore((s) => s.zoomInCounter);
+  const zoomOutCounter      = useStore((s) => s.zoomOutCounter);
+  const resetCompassCounter = useStore((s) => s.resetCompassCounter);
 
   const styleUrl = getCurrentMapStyleUrl();
 
@@ -54,6 +57,34 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
       useStore.getState().set({ firstFix: false });
     }
   }, [myLat, myLng, myHeading, navMode, followedUid, firstFix]);
+
+  // ── Zoom In ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (!zoomInCounter || !mapRef.current || !cameraRef.current) return;
+    (async () => {
+      try {
+        const zoom = await mapRef.current!.getZoom();
+        cameraRef.current!.zoomTo(Math.min(zoom + 1.2, 20), { duration: 300 });
+      } catch (e) {}
+    })();
+  }, [zoomInCounter]);
+
+  // ── Zoom Out ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (!zoomOutCounter || !mapRef.current || !cameraRef.current) return;
+    (async () => {
+      try {
+        const zoom = await mapRef.current!.getZoom();
+        cameraRef.current!.zoomTo(Math.max(zoom - 1.2, 1), { duration: 300 });
+      } catch (e) {}
+    })();
+  }, [zoomOutCounter]);
+
+  // ── Reset Compass ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!resetCompassCounter || !cameraRef.current) return;
+    cameraRef.current.easeTo({ bearing: 0, pitch: 0, duration: 400 });
+  }, [resetCompassCounter]);
 
   // ── Fit all members ────────────────────────────────────────────
   useEffect(() => {
@@ -118,8 +149,7 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
       mapStyle={styleUrl}
       onPress={handlePress}
       onRegionWillChange={handleRegionWillChange}
-      compass
-      compassHiddenFacingNorth
+      compass={false}
       scaleBar={false}
     >
       <Camera

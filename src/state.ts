@@ -84,8 +84,11 @@ interface AppState {
   // ── Route geometry (GeoJSON from OSRM) ───────────────────────
   routeGeometry: object | null;
 
-  // ── Camera fit counter ───────────────────────────────────────
-  fitAllCounter: number;
+  // ── Camera fit & control counters ────────────────────────────
+  fitAllCounter:       number;
+  zoomInCounter:       number;
+  zoomOutCounter:      number;
+  resetCompassCounter: number;
 
   // ── Actions ───────────────────────────────────────────────────
   set: (partial: Partial<Omit<AppState, 'set'>>) => void;
@@ -123,7 +126,10 @@ const initialState: Omit<AppState, 'set' | 'recomputeMemberNumbers' | 'reset'> =
   isSessionActive:  false,
   _toastMsg:        null,
   routeGeometry:    null,
-  fitAllCounter:    0,
+  fitAllCounter:       0,
+  zoomInCounter:       0,
+  zoomOutCounter:      0,
+  resetCompassCounter: 0,
 };
 
 // ─── Zustand Store ────────────────────────────────────────────────

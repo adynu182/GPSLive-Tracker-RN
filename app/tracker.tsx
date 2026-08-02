@@ -14,15 +14,19 @@ import AppMapView from '../components/MapView';
 import MembersList from '../components/MembersList';
 import BottomBar from '../components/BottomBar';
 import Toolbar from '../components/Toolbar';
+import MapControls from '../components/MapControls';
 import ConnectionBadge from '../components/ConnectionBadge';
 import FollowIndicator from '../components/FollowIndicator';
 import ToastDriver from '../components/Toast';
 import Toast from 'react-native-toast-message';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 export default function TrackerScreen() {
   const router  = useRouter();
   const scheme  = useColorScheme() === 'dark' ? 'dark' : 'light';
   const C       = Colors[scheme];
+  const insets  = useSafeAreaInsets();
 
   const isSessionActive = useStore((s) => s.isSessionActive);
   const roomId          = useStore((s) => s.roomId);
@@ -35,6 +39,9 @@ export default function TrackerScreen() {
   const [accuracyStr,   setAccuracyStr]   = useState('–');
   const [accuracyLevel, setAccuracyLevel] = useState<'good' | 'medium' | 'poor'>('poor');
   const [sidebarOpen,   setSidebarOpen]   = useState(false);
+
+  const topOffset = Math.max(insets.top, 16);
+  const bottomPadding = Math.max(insets.bottom, 12);
 
   // Redirect to join if no active session
   useEffect(() => {
@@ -146,7 +153,7 @@ export default function TrackerScreen() {
       <ConnectionBadge />
 
       {/* Room code pill */}
-      <View style={styles.topLeft}>
+      <View style={[styles.topLeft, { top: topOffset + 8 }]}>
         {roomId && !offlineMode ? (
           <Pressable
             style={[styles.roomPill, { backgroundColor: C.toolbarBg, borderColor: C.border }]}
@@ -162,9 +169,14 @@ export default function TrackerScreen() {
         ) : null}
       </View>
 
+      {/* Single unit Zoom & Compass controls (bottom-left) */}
+      <View style={[styles.bottomLeftControls, { bottom: 120 + insets.bottom }]}>
+        <MapControls />
+      </View>
+
       {/* Route mode hint */}
       {routeMode === 'picking' && (
-        <View style={[styles.pickingHint, { backgroundColor: C.primary }]}>
+        <View style={[styles.pickingHint, { backgroundColor: C.primary, bottom: 160 + insets.bottom }]}>
           <Text style={styles.pickingText}>📍 Ketuk peta untuk pilih tujuan</Text>
         </View>
       )}
@@ -174,13 +186,13 @@ export default function TrackerScreen() {
 
       {/* Sidebar: members list */}
       {sidebarOpen && (
-        <View style={styles.sidebar}>
+        <View style={[styles.sidebar, { top: topOffset + 54 }]}>
           <MembersList onFocusMember={handleFocusMember} />
         </View>
       )}
 
       {/* Bottom UI */}
-      <View style={[styles.bottomSheet, { backgroundColor: C.toolbarBg }]}>
+      <View style={[styles.bottomSheet, { backgroundColor: C.toolbarBg, paddingBottom: bottomPadding }]}>
         <BottomBar onFocusMember={handleFocusMember} />
         <Toolbar
           accuracyStr={accuracyStr}
@@ -201,8 +213,12 @@ const styles = StyleSheet.create({
   root:        { flex: 1 },
 
   topLeft: {
-    position: 'absolute', top: 52, left: 12,
+    position: 'absolute', left: 12,
     zIndex: 10,
+  },
+  bottomLeftControls: {
+    position: 'absolute', left: 14,
+    zIndex: 15,
   },
   roomPill: {
     flexDirection: 'row', alignItems: 'center',
@@ -216,7 +232,7 @@ const styles = StyleSheet.create({
   roomLabel: { fontSize: 16 },
 
   pickingHint: {
-    position: 'absolute', bottom: 160, alignSelf: 'center',
+    position: 'absolute', alignSelf: 'center',
     borderRadius: 20, paddingHorizontal: 20, paddingVertical: 10,
     zIndex: 20,
     shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
@@ -225,7 +241,7 @@ const styles = StyleSheet.create({
   pickingText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   sidebar: {
-    position: 'absolute', top: 100, right: 12,
+    position: 'absolute', right: 12,
     width: 220, zIndex: 10,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15, shadowRadius: 10, elevation: 8,
