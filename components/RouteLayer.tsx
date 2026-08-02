@@ -1,15 +1,16 @@
 import React from 'react';
-import MapLibreGL from '@maplibre/maplibre-react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { GeoJSONSource, Layer, Marker } from '@maplibre/maplibre-react-native';
 import { useStore } from '../src/state';
 
 /**
  * RouteLayer — renders the OSRM route GeoJSON line on the MapLibre map.
- * Also renders a destination pin (PointAnnotation) when a route is active.
+ * Also renders a destination pin (Marker) when a route is active.
  */
 export default function RouteLayer() {
   const routeMode     = useStore((s) => s.routeMode);
   const routeDest     = useStore((s) => s.routeDest);
-  const routeGeometry = useStore((s) => (s as any).routeGeometry);
+  const routeGeometry = useStore((s) => s.routeGeometry);
 
   if (routeMode !== 'active' || !routeDest) return null;
 
@@ -17,34 +18,50 @@ export default function RouteLayer() {
     <>
       {/* Route polyline */}
       {routeGeometry && (
-        <MapLibreGL.ShapeSource
+        <GeoJSONSource
           id="route-src"
-          shape={{
+          data={{
             type: 'Feature',
             properties: {},
             geometry: routeGeometry as any,
           }}
         >
-          <MapLibreGL.LineLayer
+          <Layer
             id="route-lyr"
-            style={{
-              lineColor:   '#4a90d9',
-              lineWidth:   6,
-              lineOpacity: 0.85,
-              lineCap:     'round',
-              lineJoin:    'round',
+            type="line"
+            paint={{
+              'line-color':   '#4a90d9',
+              'line-width':   6,
+              'line-opacity': 0.85,
+            }}
+            layout={{
+              'line-cap':  'round',
+              'line-join': 'round',
             }}
           />
-        </MapLibreGL.ShapeSource>
+        </GeoJSONSource>
       )}
 
       {/* Destination pin */}
-      <MapLibreGL.PointAnnotation
+      <Marker
         id="route-dest"
-        coordinate={[routeDest.lng, routeDest.lat]}
+        lngLat={[routeDest.lng, routeDest.lat]}
       >
-        <MapLibreGL.Callout title="Tujuan" />
-      </MapLibreGL.PointAnnotation>
+        <View style={styles.pin}>
+          <Text style={styles.pinText}>📍</Text>
+        </View>
+      </Marker>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  pin: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: '#ef4444',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: '#ffffff',
+    elevation: 4,
+  },
+  pinText: { fontSize: 16 },
+});

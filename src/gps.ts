@@ -40,11 +40,11 @@ export async function startGPS(onPosition: (lat: number, lng: number, accuracy: 
 
   // Watch compass heading separately for better accuracy
   _headingSub = await Location.watchHeadingAsync((heading) => {
-    const { mySpeed } = getState();
-    if (mySpeed > 0.3) {
-      useStore.getState().set({ myHeading: heading.trueHeading ?? heading.magHeading });
+    const h = heading.trueHeading >= 0 ? heading.trueHeading : heading.magHeading;
+    if (h != null && !isNaN(h)) {
+      useStore.getState().set({ myHeading: h });
     }
-  }) as unknown as Location.LocationSubscription;
+  });
 }
 
 // ─── Stop GPS tracking ────────────────────────────────────────────

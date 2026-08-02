@@ -5,8 +5,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import MapLibreGL from '@maplibre/maplibre-react-native';
-
 import { Colors } from '../src/theme';
 import { useStore } from '../src/state';
 import { startGPS, stopGPS, handleGPSPosition } from '../src/gps';
@@ -20,9 +18,6 @@ import ConnectionBadge from '../components/ConnectionBadge';
 import FollowIndicator from '../components/FollowIndicator';
 import ToastDriver from '../components/Toast';
 import Toast from 'react-native-toast-message';
-
-// Set Mapbox token (public, needed by @maplibre/maplibre-react-native even for non-Mapbox styles)
-MapLibreGL.setAccessToken(null);
 
 export default function TrackerScreen() {
   const router  = useRouter();
@@ -121,8 +116,8 @@ export default function TrackerScreen() {
   }, [routeMode]);
 
   const handleFitAll = useCallback(() => {
-    // Trigger a "fit all members" — implemented via camera in MapView
-    // We'll just set a state flag the MapView can react to
+    const count = useStore.getState().fitAllCounter || 0;
+    useStore.getState().set({ fitAllCounter: count + 1 });
     Toast.show({ type: 'info', text1: '👁 Menyesuaikan tampilan...' });
   }, []);
 

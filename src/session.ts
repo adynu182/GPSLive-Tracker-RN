@@ -123,31 +123,30 @@ async function startSession(roomId: string, myId: string): Promise<{ ok: boolean
     const data: Record<string, any> = snap.val() || {};
     const state = getState();
 
+    const currentMembers = { ...state.members };
+
     // Detect departures
-    Object.keys(state.members).forEach((uid) => {
+    Object.keys(currentMembers).forEach((uid) => {
       if (!data[uid] && uid !== myId) {
-        const member = state.members[uid];
+        const member = currentMembers[uid];
         useStore.getState().set({
           _toastMsg: `${member.emoji || '🧑'} ${member.name || 'Anggota'} keluar`,
         } as any);
-        const next = { ...state.members };
-        delete next[uid];
-        useStore.getState().set({ members: next });
+        delete currentMembers[uid];
       }
     });
 
     // Detect arrivals / updates
-    const updated: typeof state.members = { ...state.members };
     Object.entries(data).forEach(([uid, m]: [string, any]) => {
-      const isNew = !updated[uid] && uid !== myId;
+      const isNew = !currentMembers[uid] && uid !== myId;
       if (isNew) {
         useStore.getState().set({
           _toastMsg: `${m.emoji || '🧑'} ${m.name || 'Anggota'} bergabung!`,
         } as any);
       }
 
-      const prev = updated[uid] || {};
-      updated[uid] = {
+      const prev = currentMembers[uid] || {};
+      currentMembers[uid] = {
         ...prev,
         ...m,
         name:  m.name  ?? prev.name  ?? 'Anggota',
@@ -161,7 +160,7 @@ async function startSession(roomId: string, myId: string): Promise<{ ok: boolean
       }
     });
 
-    useStore.getState().set({ members: updated });
+    useStore.getState().set({ members: currentMembers });
     useStore.getState().recomputeMemberNumbers();
   });
 
@@ -203,9 +202,7 @@ export function toggleSharing(): void {
   useStore.getState().set({ sharingOn: next });
 
   if (db && myId && roomId) {
-    import('firebase/database').then(({ ref: r, set: s }) => {
-      s(r(db!, `rooms/${roomId}/members/${myId}/sharing`), next);
-    });
+    set(ref(db, `rooms/${roomId}/members/${myId}/sharing`), next);
   }
 }
 
