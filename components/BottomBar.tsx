@@ -1,16 +1,16 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
-import { useColorScheme } from 'react-native';
-import { Colors } from '../src/theme';
+import { Colors, useAppTheme } from '../src/theme';
 import { useStore } from '../src/state';
 import { haversine, fmtDist, fmtDuration } from '../src/constants';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 interface Props {
   onFocusMember: (uid: string) => void;
 }
 
 export default function BottomBar({ onFocusMember }: Props) {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const scheme = useAppTheme();
   const C = Colors[scheme];
 
   const members   = useStore((s) => s.members);
@@ -25,7 +25,9 @@ export default function BottomBar({ onFocusMember }: Props) {
     return (
       <View style={[styles.bar, { backgroundColor: C.toolbarBg, borderTopColor: C.border }]}>
         <View style={[styles.chip, { backgroundColor: C.primary + '20', borderColor: C.primary }]}>
-          <Text style={[styles.chipLabel, { color: C.text }]}>🚗 Menuju tujuan</Text>
+          <Text style={[styles.chipLabel, { color: C.text }]}>
+            <MaterialCommunityIcons name="car" size={14} color={C.text} /> Menuju tujuan
+          </Text>
           <Text style={[styles.chipValue, { color: C.primary }]}>
             {fmtDist(routeInfo.distance)} · {fmtDuration(routeInfo.duration)}
           </Text>

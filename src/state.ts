@@ -57,6 +57,7 @@ interface AppState {
   firstFix:    boolean;
   colorIdx:    number;
   navMode:     boolean;
+  appTheme:    'light' | 'dark';
 
   // ── Follow mode ───────────────────────────────────────────────
   followedUid:    string | null;
@@ -112,6 +113,7 @@ const initialState: Omit<AppState, 'set' | 'recomputeMemberNumbers' | 'reset'> =
   firstFix:    true,
   colorIdx:    0,
   navMode:     false,
+  appTheme:    'light',
   followedUid:    null,
   isFollowFlying: false,
   routeMode:     'idle',

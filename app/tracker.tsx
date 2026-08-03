@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, Pressable,
-  useColorScheme, Alert,
+  View, Text, StyleSheet, Pressable, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { Colors } from '../src/theme';
+import { Colors, useAppTheme } from '../src/theme';
 import { useStore } from '../src/state';
 import { startGPS, stopGPS, handleGPSPosition } from '../src/gps';
 import { maybeRecalculateRoute, performLogout } from '../src/session';
@@ -23,22 +22,22 @@ import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TrackerScreen() {
-  const router  = useRouter();
-  const scheme  = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const C       = Colors[scheme];
-  const insets  = useSafeAreaInsets();
+  const router = useRouter();
+  const scheme = useAppTheme();
+  const C = Colors[scheme];
+  const insets = useSafeAreaInsets();
 
   const isSessionActive = useStore((s) => s.isSessionActive);
-  const roomId          = useStore((s) => s.roomId);
-  const offlineMode     = useStore((s) => s.offlineMode);
-  const followedUid     = useStore((s) => s.followedUid);
-  const members         = useStore((s) => s.members);
-  const navMode         = useStore((s) => s.navMode);
-  const routeMode       = useStore((s) => s.routeMode);
+  const roomId = useStore((s) => s.roomId);
+  const offlineMode = useStore((s) => s.offlineMode);
+  const followedUid = useStore((s) => s.followedUid);
+  const members = useStore((s) => s.members);
+  const navMode = useStore((s) => s.navMode);
+  const routeMode = useStore((s) => s.routeMode);
 
-  const [accuracyStr,   setAccuracyStr]   = useState('–');
+  const [accuracyStr, setAccuracyStr] = useState('–');
   const [accuracyLevel, setAccuracyLevel] = useState<'good' | 'medium' | 'poor'>('poor');
-  const [sidebarOpen,   setSidebarOpen]   = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const topOffset = Math.max(insets.top, 16);
   const bottomPadding = Math.max(insets.bottom, 12);
@@ -72,45 +71,35 @@ export default function TrackerScreen() {
   const handleFocusMember = useCallback((uid: string) => {
     const m = members[uid];
     if (!m || m.lat == null) {
-      Toast.show({ type: 'info', text1: '📍 Lokasi belum tersedia' });
       return;
     }
 
     if (followedUid === uid) {
       useStore.getState().set({ followedUid: null });
-      Toast.show({ type: 'info', text1: '📍 Mode ikuti dinonaktifkan' });
       return;
     }
 
     useStore.getState().set({ followedUid: uid, isFollowFlying: true });
-    Toast.show({ type: 'info', text1: `📍 Mengikuti ${m.name}` });
   }, [members, followedUid]);
 
   const handleCancelFollow = useCallback(() => {
     useStore.getState().set({ followedUid: null });
-    Toast.show({ type: 'info', text1: '🗺️ Mode ikuti dibatalkan' });
   }, []);
 
   const handleMapDrag = useCallback(() => {
     if (followedUid) {
       useStore.getState().set({ followedUid: null });
-      Toast.show({ type: 'info', text1: '🗺️ Mode ikuti dibatalkan' });
     }
   }, [followedUid]);
 
-  const handleToggleNavMode = useCallback(() => {
-    useStore.getState().set({ navMode: !navMode });
-  }, [navMode]);
 
   const handleToggleRoute = useCallback(() => {
     if (routeMode === 'idle') {
       const { myLat } = useStore.getState();
       if (myLat == null) {
-        Toast.show({ type: 'info', text1: '⚠️ Tunggu GPS kamu terdeteksi dulu' });
         return;
       }
       useStore.getState().set({ routeMode: 'picking' });
-      Toast.show({ type: 'info', text1: '📍 Ketuk peta untuk pilih tujuan' });
     } else if (routeMode === 'picking') {
       useStore.getState().set({ routeMode: 'idle' });
     } else {
@@ -125,7 +114,6 @@ export default function TrackerScreen() {
   const handleFitAll = useCallback(() => {
     const count = useStore.getState().fitAllCounter || 0;
     useStore.getState().set({ fitAllCounter: count + 1 });
-    Toast.show({ type: 'info', text1: '👁 Menyesuaikan tampilan...' });
   }, []);
 
   const handleLogout = useCallback(async () => {
@@ -153,7 +141,7 @@ export default function TrackerScreen() {
       <ConnectionBadge />
 
       {/* Room code pill */}
-      <View style={[styles.topLeft, { top: topOffset + 8 }]}>
+      <View style={[styles.topLeft, { top: topOffset + 10 }]}>
         {roomId && !offlineMode ? (
           <Pressable
             style={[styles.roomPill, { backgroundColor: C.toolbarBg, borderColor: C.border }]}
@@ -186,7 +174,7 @@ export default function TrackerScreen() {
 
       {/* Sidebar: members list */}
       {sidebarOpen && (
-        <View style={[styles.sidebar, { top: topOffset + 54 }]}>
+        <View style={[styles.sidebar, { top: topOffset + 10 }]}>
           <MembersList onFocusMember={handleFocusMember} />
         </View>
       )}
@@ -197,7 +185,6 @@ export default function TrackerScreen() {
         <Toolbar
           accuracyStr={accuracyStr}
           accuracyLevel={accuracyLevel}
-          onToggleNavMode={handleToggleNavMode}
           onToggleRoute={handleToggleRoute}
           onFitAll={handleFitAll}
         />
@@ -210,7 +197,7 @@ export default function TrackerScreen() {
 }
 
 const styles = StyleSheet.create({
-  root:        { flex: 1 },
+  root: { flex: 1 },
 
   topLeft: {
     position: 'absolute', left: 12,
@@ -228,7 +215,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12, shadowRadius: 4, elevation: 3,
   },
-  roomCode:  { fontWeight: '900', fontSize: 15, letterSpacing: 2 },
+  roomCode: { fontWeight: '900', fontSize: 15, letterSpacing: 2 },
   roomLabel: { fontSize: 16 },
 
   pickingHint: {

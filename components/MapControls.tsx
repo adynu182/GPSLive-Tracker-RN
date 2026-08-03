@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, useColorScheme } from 'react-native';
-import { Colors } from '../src/theme';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Colors, useAppTheme } from '../src/theme';
 import { useStore } from '../src/state';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 export default function MapControls() {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const scheme = useAppTheme();
   const C = Colors[scheme];
 
   const handleZoomIn = () => {
@@ -20,6 +21,11 @@ export default function MapControls() {
   const handleResetCompass = () => {
     const count = useStore.getState().resetCompassCounter || 0;
     useStore.getState().set({ resetCompassCounter: count + 1 });
+  };
+
+  const navMode = useStore((s) => s.navMode);
+  const handleToggleNavMode = () => {
+    useStore.getState().set({ navMode: !navMode });
   };
 
   return (
@@ -52,7 +58,18 @@ export default function MapControls() {
         onPress={handleResetCompass}
         android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: false }}
       >
-        <Text style={styles.compassIcon}>🧭</Text>
+        <MaterialCommunityIcons name="compass-outline" size={22} color={C.text} />
+      </Pressable>
+
+      <View style={[styles.divider, { backgroundColor: C.border }]} />
+
+      {/* Navigation Mode */}
+      <Pressable
+        style={[styles.btn, navMode && { backgroundColor: C.primary + '20' }]}
+        onPress={handleToggleNavMode}
+        android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: false }}
+      >
+        <MaterialCommunityIcons name={navMode ? "navigation-variant" : "navigation-variant-outline"} size={22} color={C.text} />
       </Pressable>
     </View>
   );

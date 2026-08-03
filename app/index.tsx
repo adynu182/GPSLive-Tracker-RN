@@ -5,8 +5,7 @@ import {
   KeyboardAvoidingView, Platform, Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useColorScheme } from 'react-native';
-import { Colors } from '../src/theme';
+import { Colors, useAppTheme } from '../src/theme';
 import { EMOJIS, COLORS } from '../src/constants';
 import { loadUserData } from '../src/storage';
 import { useStore } from '../src/state';
@@ -20,16 +19,16 @@ import Toast from 'react-native-toast-message';
 
 export default function JoinScreen() {
   const router = useRouter();
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const scheme = useAppTheme();
   const C = Colors[scheme];
 
-  const [tab,        setTab]        = useState<'create' | 'join'>('create');
-  const [name,       setName]       = useState('');
-  const [emoji,      setEmoji]      = useState('🧑');
-  const [joinCode,   setJoinCodeState] = useState('');
-  const [roomCode,   setRoomCode]   = useState(getGeneratedCode());
-  const [loading,    setLoading]    = useState(false);
-  const [colorIdx,   setColorIdx]   = useState(0);
+  const [tab, setTab] = useState<'create' | 'join'>('create');
+  const [name, setName] = useState('');
+  const [emoji, setEmoji] = useState('🧑');
+  const [joinCode, setJoinCodeState] = useState('');
+  const [roomCode, setRoomCode] = useState(getGeneratedCode());
+  const [loading, setLoading] = useState(false);
+  const [colorIdx, setColorIdx] = useState(0);
 
   const isSessionActive = useStore((s) => s.isSessionActive);
 
@@ -44,7 +43,7 @@ export default function JoinScreen() {
   useEffect(() => {
     (async () => {
       const data = await loadUserData();
-      if (data.myName)  setName(data.myName);
+      if (data.myName) setName(data.myName);
       if (data.myEmoji) setEmoji(data.myEmoji);
       if (data.myColor) {
         const idx = COLORS.indexOf(data.myColor);
@@ -186,12 +185,6 @@ export default function JoinScreen() {
             />
           </View>
 
-          {/* Color indicator */}
-          <View style={styles.colorRow}>
-            <View style={[styles.colorDot, { backgroundColor: myColor }]} />
-            <Text style={[styles.colorLabel, { color: C.muted }]}>Warna marker kamu</Text>
-          </View>
-
           {/* Start button */}
           <Pressable
             style={[styles.primaryBtn, { backgroundColor: C.primary }, loading && styles.disabled]}
@@ -231,7 +224,7 @@ export default function JoinScreen() {
 }
 
 const styles = StyleSheet.create({
-  root:   { flex: 1 },
+  root: { flex: 1 },
   scroll: { padding: 20, paddingBottom: 40 },
 
   header: { alignItems: 'center', marginBottom: 28, marginTop: 20 },
@@ -242,9 +235,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8,
     elevation: 6,
   },
-  logoText:  { fontSize: 28 },
-  appName:   { fontSize: 26, fontWeight: '800', letterSpacing: 0.3 },
-  subtitle:  { fontSize: 14, marginTop: 4 },
+  logoText: { fontSize: 28 },
+  appName: { fontSize: 26, fontWeight: '800', letterSpacing: 0.3 },
+  subtitle: { fontSize: 14, marginTop: 4 },
 
   card: {
     borderRadius: 20, padding: 20, borderWidth: 1,
@@ -253,19 +246,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  tabs:          { flexDirection: 'row', borderRadius: 12, padding: 4, marginBottom: 20 },
-  tab:           { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
-  tabText:       { fontWeight: '700', fontSize: 13 },
+  tabs: { flexDirection: 'row', borderRadius: 12, padding: 4, marginBottom: 20 },
+  tab: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
+  tabText: { fontWeight: '700', fontSize: 13 },
 
-  section:       { marginBottom: 16 },
-  label:         { fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  section: { marginBottom: 16 },
+  label: { fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  roomCodeBox:   {
+  roomCodeBox: {
     borderWidth: 2, borderRadius: 12, padding: 16,
     alignItems: 'center', borderStyle: 'dashed',
   },
-  roomCode:      { fontSize: 28, fontWeight: '900', letterSpacing: 6 },
-  regenHint:     { fontSize: 11, marginTop: 4 },
+  roomCode: { fontSize: 28, fontWeight: '900', letterSpacing: 6 },
+  regenHint: { fontSize: 11, marginTop: 4 },
 
   input: {
     borderWidth: 1, borderRadius: 12, paddingHorizontal: 14,
@@ -277,11 +270,11 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: 'transparent',
   },
-  emojiText:    { fontSize: 22 },
+  emojiText: { fontSize: 22 },
 
-  colorRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  colorDot:  { width: 16, height: 16, borderRadius: 8, marginRight: 8 },
-  colorLabel:{ fontSize: 13 },
+  colorRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  colorDot: { width: 16, height: 16, borderRadius: 8, marginRight: 8 },
+  colorLabel: { fontSize: 13 },
 
   primaryBtn: {
     borderRadius: 14, paddingVertical: 16,
@@ -290,11 +283,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2, shadowRadius: 6, elevation: 4,
   },
   primaryBtnText: { color: '#fff', fontWeight: '800', fontSize: 17 },
-  disabled:       { opacity: 0.6 },
+  disabled: { opacity: 0.6 },
 
-  dividerRow:   { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
-  divider:      { flex: 1, height: 1 },
-  dividerText:  { marginHorizontal: 10, fontSize: 12 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
+  divider: { flex: 1, height: 1 },
+  dividerText: { marginHorizontal: 10, fontSize: 12 },
 
   offlineBtn: {
     borderWidth: 1, borderRadius: 14, paddingVertical: 13, alignItems: 'center',

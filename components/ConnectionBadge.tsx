@@ -1,11 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useColorScheme } from 'react-native';
-import { Colors } from '../src/theme';
+import { Colors, useAppTheme } from '../src/theme';
 import { useStore } from '../src/state';
 
 export default function ConnectionBadge() {
-  const scheme    = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const scheme = useAppTheme();
   const C         = Colors[scheme];
   const connected = useStore((s) => s.connected);
 

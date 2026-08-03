@@ -1,9 +1,10 @@
-import { Appearance, useColorScheme } from 'react-native';
+import { Appearance } from 'react-native';
+import { useStore } from './state';
 
 // ─── Map style URLs (same as PWA) ─────────────────────────────────
 export const MAP_STYLES = {
   light: 'https://tiles.openfreemap.org/styles/liberty',
-  dark:  'https://tiles.openfreemap.org/styles/liberty', // same URL; OpenFreeMap handles dark via params
+  dark:  'https://tiles.openfreemap.org/styles/fiord',
 } as const;
 
 export type ThemeMode = 'light' | 'dark';
@@ -15,7 +16,11 @@ export function getCurrentTheme(): ThemeMode {
 
 // ─── Get current map style URL ───────────────────────────────────
 export function getCurrentMapStyleUrl(): string {
-  return MAP_STYLES[getCurrentTheme()];
+  return MAP_STYLES[useStore.getState().appTheme];
+}
+
+export function useAppTheme(): ThemeMode {
+  return useStore((s) => s.appTheme);
 }
 
 // ─── Color palette ───────────────────────────────────────────────

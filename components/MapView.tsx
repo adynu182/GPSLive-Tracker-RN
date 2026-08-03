@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { StyleSheet } from 'react-native';
 import { Map, Camera, Marker, MapRef, CameraRef } from '@maplibre/maplibre-react-native';
 import { useStore, getState } from '../src/state';
-import { getCurrentMapStyleUrl } from '../src/theme';
+import { MAP_STYLES, useAppTheme } from '../src/theme';
 import MemberMarker from './MemberMarker';
 import RouteLayer from './RouteLayer';
 import { requestRoute } from '../src/session';
@@ -29,7 +29,8 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
   const zoomOutCounter      = useStore((s) => s.zoomOutCounter);
   const resetCompassCounter = useStore((s) => s.resetCompassCounter);
 
-  const styleUrl = getCurrentMapStyleUrl();
+  const appTheme = useAppTheme();
+  const styleUrl = MAP_STYLES[appTheme];
 
   // ── Follow camera ──────────────────────────────────────────────
   useEffect(() => {
@@ -47,6 +48,7 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
       cameraRef.current.easeTo({
         center:   [myLng, myLat],
         bearing:  myHeading ?? 0,
+        pitch:    45,
         duration: 500,
       });
       return;

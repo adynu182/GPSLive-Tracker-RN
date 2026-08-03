@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useColorScheme } from 'react-native';
-import { Colors } from '../src/theme';
+import { Colors, useAppTheme } from '../src/theme';
 import { useStore } from '../src/state';
 
 interface Props {
@@ -9,7 +8,7 @@ interface Props {
 }
 
 export default function MembersList({ onFocusMember }: Props) {
-  const scheme  = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const scheme = useAppTheme();
   const C       = Colors[scheme];
 
   const members       = useStore((s) => s.members);

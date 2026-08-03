@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { useColorScheme } from 'react-native';
-import { Colors } from '../src/theme';
+import { Colors, useAppTheme } from '../src/theme';
 import { useStore } from '../src/state';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,19 +10,19 @@ interface Props {
 }
 
 export default function FollowIndicator({ onCancel }: Props) {
-  const scheme      = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const C           = Colors[scheme];
-  const insets      = useSafeAreaInsets();
+  const scheme = useAppTheme();
+  const C = Colors[scheme];
+  const insets = useSafeAreaInsets();
   const followedUid = useStore((s) => s.followedUid);
-  const members     = useStore((s) => s.members);
+  const members = useStore((s) => s.members);
+
+  const topOffset = Math.max(insets.top, 16);
 
   if (!followedUid || !members[followedUid]) return null;
   const m = members[followedUid];
 
-  const topPos = Math.max(insets.top, 16) + 12;
-
   return (
-    <View style={[styles.wrap, { top: topPos, backgroundColor: C.primary + 'EE', shadowColor: C.primary }]}>
+    <View style={[styles.wrap, { top: topOffset + 60, backgroundColor: C.primary + 'EE', shadowColor: C.primary }]}>
       <Text style={styles.text}>
         {m.emoji} Mengikuti {m.name}
       </Text>
@@ -42,7 +41,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8,
     elevation: 6, gap: 10,
   },
-  text:       { color: '#fff', fontWeight: '700', fontSize: 14 },
-  cancelBtn:  { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
+  text: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  cancelBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
   cancelText: { color: '#fff', fontSize: 12, fontWeight: '800' },
 });
