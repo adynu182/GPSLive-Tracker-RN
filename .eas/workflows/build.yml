@@ -1,0 +1,25 @@
+name: EAS Build
+
+# Jalan otomatis tiap push ke branch main (butuh repo GitHub yang sudah
+# di-connect ke project EAS lewat dashboard expo.dev).
+# Bisa juga dipicu manual: eas workflow:run .eas/workflows/build.yml
+on:
+  push:
+    branches: ['main']
+  workflow_dispatch:
+
+jobs:
+  build_android:
+    name: Build Android
+    type: build
+    params:
+      platform: android
+      # Ganti sesuai nama profile di eas.json kamu (development/preview/production)
+      profile: preview
+
+  build_ios:
+    name: Build iOS
+    type: build
+    params:
+      platform: ios
+      profile: preview
