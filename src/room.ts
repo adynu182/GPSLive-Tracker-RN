@@ -45,8 +45,9 @@ export async function shareRoomCode(): Promise<void> {
   const { Share } = await import('react-native');
   const { roomId } = getState();
   const code = roomId || _generatedCode;
-  const message = `Gabung sesi GPS Live bareng aku!\nKode room: ${code}`;
-  await Share.share({ message, title: 'GPS Live — Kode Room' });
+  const url = `https://gps-live-tracker.vercel.app/?room=${code}`;
+  const message = `Gabung sesi GPS Live bareng aku!\nKode room: ${code}\nLink: ${url}`;
+  await Share.share({ message, url, title: 'GPS Live — Kode Room' });
 }
 
 // ─── Copy room code to clipboard ─────────────────────────────────

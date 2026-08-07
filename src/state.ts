@@ -90,6 +90,7 @@ interface AppState {
   zoomInCounter:       number;
   zoomOutCounter:      number;
   resetCompassCounter: number;
+  navZoomCounter:      number;
 
   // ── Actions ───────────────────────────────────────────────────
   set: (partial: Partial<Omit<AppState, 'set'>>) => void;
@@ -132,6 +133,7 @@ const initialState: Omit<AppState, 'set' | 'recomputeMemberNumbers' | 'reset'> =
   zoomInCounter:       0,
   zoomOutCounter:      0,
   resetCompassCounter: 0,
+  navZoomCounter:      0,
 };
 
 // ─── Zustand Store ────────────────────────────────────────────────

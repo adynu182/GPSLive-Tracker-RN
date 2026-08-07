@@ -51,12 +51,9 @@ export async function getSavedRoomCode(): Promise<string> {
   return (await AsyncStorage.getItem(KEY_ROOM)) || '';
 }
 
-// ─── Clear name + emoji saat logout ──────────────────────────────
+// ─── Clear room session data saat logout ──────────────────────────
 export async function clearSessionData(): Promise<void> {
-  await Promise.all([
-    AsyncStorage.removeItem(KEY_NAME),
-    AsyncStorage.removeItem(KEY_EMOJI),
-  ]);
+  await AsyncStorage.removeItem(KEY_ROOM);
 }
 
 // ─── Device ID unik per perangkat (bukan per sesi) ───────────────

@@ -25,7 +25,13 @@ export default function MapControls() {
 
   const navMode = useStore((s) => s.navMode);
   const handleToggleNavMode = () => {
-    useStore.getState().set({ navMode: !navMode });
+    const next = !navMode;
+    const state = useStore.getState();
+    state.set({
+      navMode: next,
+      // zoom to street level when activating nav mode
+      ...(next ? { navZoomCounter: (state.navZoomCounter || 0) + 1 } : {}),
+    });
   };
 
   return (
@@ -85,12 +91,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 5,
-    width: 42,
     alignItems: 'center',
   },
   btn: {
-    width: 42,
-    height: 42,
+    width: 60,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
   },

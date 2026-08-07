@@ -13,10 +13,10 @@ export default function BottomBar({ onFocusMember }: Props) {
   const scheme = useAppTheme();
   const C = Colors[scheme];
 
-  const members   = useStore((s) => s.members);
-  const myId      = useStore((s) => s.myId);
-  const myLat     = useStore((s) => s.myLat);
-  const myLng     = useStore((s) => s.myLng);
+  const members = useStore((s) => s.members);
+  const myId = useStore((s) => s.myId);
+  const myLat = useStore((s) => s.myLat);
+  const myLng = useStore((s) => s.myLng);
   const routeMode = useStore((s) => s.routeMode);
   const routeInfo = useStore((s) => s.routeInfo);
 
@@ -84,15 +84,15 @@ const styles = StyleSheet.create({
     minHeight: 52,
     justifyContent: 'center',
   },
-  scroll:    { alignItems: 'center', gap: 8 },
-  empty:     { fontSize: 13, textAlign: 'center' },
+  scroll: { alignItems: 'center', gap: 8 },
+  empty: { fontSize: 13, textAlign: 'center' },
   chip: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: 20, borderWidth: 1,
     paddingHorizontal: 12, paddingVertical: 7,
     gap: 6,
   },
-  dot:       { width: 8, height: 8, borderRadius: 4 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
   chipLabel: { fontSize: 13, fontWeight: '600' },
   chipValue: { fontSize: 13, fontWeight: '800' },
 });

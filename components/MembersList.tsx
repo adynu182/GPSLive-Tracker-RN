@@ -32,12 +32,16 @@ export default function MembersList({ onFocusMember }: Props) {
             <Text style={styles.countText}>{entries.length}</Text>
           </View>
         </View>
-        <Text style={{ color: C.muted, fontSize: 14 }}>{collapsed ? '▼' : '▲'}</Text>
+        <Text style={{ color: C.muted, fontSize: 13 }}>{collapsed ? '▼' : '▲'}</Text>
       </Pressable>
 
-      {/* List */}
+      {/* Horizontal Pill List */}
       {!collapsed && (
-        <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalList}
+        >
           {entries.map(([uid, m]) => {
             const online      = m.sharing && m.lat != null;
             const isFollowing = uid === followedUid;
@@ -48,9 +52,9 @@ export default function MembersList({ onFocusMember }: Props) {
               <Pressable
                 key={uid}
                 style={[
-                  styles.card,
+                  styles.pillCard,
                   {
-                    backgroundColor: m.color + '14',
+                    backgroundColor: isFollowing ? m.color + '33' : m.color + '14',
                     borderColor:     isFollowing ? m.color : C.border,
                   },
                 ]}
@@ -58,21 +62,16 @@ export default function MembersList({ onFocusMember }: Props) {
               >
                 {/* Avatar */}
                 <View style={styles.avatarWrap}>
-                  <View style={[styles.avatar, { backgroundColor: m.color, opacity: m.sharing === false ? 0.5 : 1 }]}>
+                  <View style={[styles.avatar, { backgroundColor: m.color, opacity: !online ? 0.5 : 1 }]}>
                     <Text style={styles.avatarNum}>{num}</Text>
                   </View>
                   <View style={[styles.statusDot, { backgroundColor: online ? '#22c55e' : '#9ca3af' }]} />
                 </View>
 
-                {/* Name */}
-                <View style={styles.nameWrap}>
-                  <Text style={[styles.name, { color: isFollowing ? m.color : C.text }]} numberOfLines={1}>
-                    {m.emoji} {m.name}{isMe ? ' (Me)' : ''}{isFollowing ? ' 🔒' : ''}
-                  </Text>
-                  <Text style={[styles.statusLabel, { color: C.muted }]}>
-                    {online ? 'Online' : 'Offline'}
-                  </Text>
-                </View>
+                {/* Emoji & Name */}
+                <Text style={[styles.pillName, { color: isFollowing ? m.color : C.text }]} numberOfLines={1}>
+                  {m.emoji} {m.name}{isMe ? ' (Me)' : ''}{isFollowing ? ' 🎯' : ''}
+                </Text>
               </Pressable>
             );
           })}
@@ -84,38 +83,61 @@ export default function MembersList({ onFocusMember }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 16, borderWidth: 1,
-    overflow: 'hidden', maxHeight: 280,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    paddingBottom: 6,
   },
   header: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle:  { fontWeight: '700', fontSize: 14 },
+  headerTitle:  { fontWeight: '700', fontSize: 13 },
   countBadge:   { borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 },
-  countText:    { color: '#fff', fontSize: 12, fontWeight: '700' },
+  countText:    { color: '#fff', fontSize: 11, fontWeight: '700' },
 
-  list: { paddingHorizontal: 10, paddingBottom: 8 },
-  card: {
-    flexDirection: 'row', alignItems: 'center',
-    borderRadius: 12, padding: 10, marginBottom: 6,
+  horizontalList: {
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  pillCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderWidth: 1.5,
+    gap: 7,
   },
 
-  avatarWrap:  { position: 'relative', marginRight: 10 },
+  avatarWrap:  { position: 'relative' },
   avatar: {
-    width: 32, height: 32, borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  avatarNum:   { color: '#fff', fontSize: 13, fontWeight: '800' },
+  avatarNum:   { color: '#fff', fontSize: 11, fontWeight: '800' },
   statusDot: {
-    position: 'absolute', bottom: -1, right: -1,
-    width: 10, height: 10, borderRadius: 5,
-    borderWidth: 1.5, borderColor: '#fff',
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#fff',
   },
 
-  nameWrap:    { flex: 1 },
-  name:        { fontSize: 13, fontWeight: '700' },
-  statusLabel: { fontSize: 11, marginTop: 1 },
+  pillName: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
 });

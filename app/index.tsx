@@ -194,7 +194,7 @@ export default function JoinScreen() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.primaryBtnText}>🗺️ Bagikan Lokasi</Text>
+              <Text style={styles.primaryBtnText}>Bagikan Lokasi</Text>
             )}
           </Pressable>
 
@@ -210,7 +210,7 @@ export default function JoinScreen() {
             style={[styles.offlineBtn, { borderColor: C.border }]}
             onPress={handleOfflineNav}
           >
-            <Text style={[styles.offlineBtnText, { color: C.muted }]}>🗺️ Mode Navigasi Offline</Text>
+            <Text style={[styles.offlineBtnText, { color: C.muted }]}>Mode Navigasi Offline</Text>
           </Pressable>
 
         </View>

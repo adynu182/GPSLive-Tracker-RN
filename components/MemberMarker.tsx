@@ -16,6 +16,7 @@ export default function MemberMarker({ uid }: Props) {
   const num = useStore((s) => s.memberNumbers[uid] ?? 1);
   const navMode = useStore((s) => s.navMode);
   const myId = useStore((s) => s.myId);
+  const showLabels = useStore((s) => s.showLabels);
 
   if (!member) return null;
 
@@ -34,22 +35,27 @@ export default function MemberMarker({ uid }: Props) {
     );
   }
 
+  const isOnline = member.sharing && member.lat != null;
+  const markerColor = isOnline ? member.color : '#9ca3af';
+
   return (
     <View style={styles.wrap}>
       {/* Emoji bubble */}
-      <View style={[styles.bubble, { backgroundColor: member.color, borderColor: member.sharing ? member.color : '#9ca3af' }]}>
-        <Text style={styles.emoji}>{member.emoji}</Text>
+      <View style={[styles.bubble, { backgroundColor: markerColor, borderColor: markerColor }]}>
+        <Text style={[styles.emoji, !isOnline && styles.emojiOffline]}>{member.emoji}</Text>
       </View>
       {/* Number badge */}
-      <View style={[styles.badge, { backgroundColor: member.color }]}>
+      <View style={[styles.badge, { backgroundColor: markerColor }]}>
         <Text style={styles.badgeText}>{num}</Text>
       </View>
       {/* Callout label */}
-      <View style={[styles.label, { backgroundColor: C.card }]}>
-        <Text style={[styles.labelText, { color: C.text }]} numberOfLines={1}>
-          {member.name}
-        </Text>
-      </View>
+      {showLabels && (
+        <View style={[styles.label, { backgroundColor: C.card }]}>
+          <Text style={[styles.labelText, { color: isOnline ? C.text : C.muted }]} numberOfLines={1}>
+            {member.name}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -57,13 +63,14 @@ export default function MemberMarker({ uid }: Props) {
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center' },
   bubble: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 30, height: 30, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 3,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25, shadowRadius: 4, elevation: 5,
   },
   emoji: { fontSize: 20 },
+  emojiOffline: { opacity: 0.55 },
   badge: {
     position: 'absolute', top: -4, right: -4,
     width: 18, height: 18, borderRadius: 9,

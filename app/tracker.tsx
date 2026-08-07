@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, Alert,
+  View, Text, StyleSheet, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -10,13 +10,13 @@ import { startGPS, stopGPS, handleGPSPosition } from '../src/gps';
 import { maybeRecalculateRoute, performLogout } from '../src/session';
 
 import AppMapView from '../components/MapView';
-import MembersList from '../components/MembersList';
 import BottomBar from '../components/BottomBar';
 import Toolbar from '../components/Toolbar';
 import MapControls from '../components/MapControls';
 import ConnectionBadge from '../components/ConnectionBadge';
 import FollowIndicator from '../components/FollowIndicator';
 import ToastDriver from '../components/Toast';
+import TopHeader from '../components/TopHeader';
 import Toast from 'react-native-toast-message';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,16 +28,12 @@ export default function TrackerScreen() {
   const insets = useSafeAreaInsets();
 
   const isSessionActive = useStore((s) => s.isSessionActive);
-  const roomId = useStore((s) => s.roomId);
-  const offlineMode = useStore((s) => s.offlineMode);
   const followedUid = useStore((s) => s.followedUid);
   const members = useStore((s) => s.members);
-  const navMode = useStore((s) => s.navMode);
   const routeMode = useStore((s) => s.routeMode);
 
   const [accuracyStr, setAccuracyStr] = useState('–');
   const [accuracyLevel, setAccuracyLevel] = useState<'good' | 'medium' | 'poor'>('poor');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const topOffset = Math.max(insets.top, 16);
   const bottomPadding = Math.max(insets.bottom, 12);
@@ -137,25 +133,11 @@ export default function TrackerScreen() {
       {/* Map */}
       <AppMapView onMapDrag={handleMapDrag} />
 
-      {/* Offline badge */}
-      <ConnectionBadge />
+      {/* Top header: room code chip + member list panel */}
+      <TopHeader onFocusMember={handleFocusMember} />
 
-      {/* Room code pill */}
-      <View style={[styles.topLeft, { top: topOffset + 10 }]}>
-        {roomId && !offlineMode ? (
-          <Pressable
-            style={[styles.roomPill, { backgroundColor: C.toolbarBg, borderColor: C.border }]}
-            onPress={() => setSidebarOpen((v) => !v)}
-          >
-            <Text style={[styles.roomCode, { color: C.primary }]}>{roomId}</Text>
-            <Text style={[styles.roomLabel, { color: C.muted }]}>👥</Text>
-          </Pressable>
-        ) : offlineMode ? (
-          <View style={[styles.roomPill, { backgroundColor: C.toolbarBg, borderColor: C.border }]}>
-            <Text style={[styles.roomCode, { color: C.muted }]}>Offline Nav</Text>
-          </View>
-        ) : null}
-      </View>
+      {/* Offline badge fallback (shown when not connected, inside TopHeader too) */}
+      <ConnectionBadge />
 
       {/* Single unit Zoom & Compass controls (bottom-left) */}
       <View style={[styles.bottomLeftControls, { bottom: 120 + insets.bottom }]}>
@@ -172,13 +154,6 @@ export default function TrackerScreen() {
       {/* Follow indicator */}
       <FollowIndicator onCancel={handleCancelFollow} />
 
-      {/* Sidebar: members list */}
-      {sidebarOpen && (
-        <View style={[styles.sidebar, { top: topOffset + 10 }]}>
-          <MembersList onFocusMember={handleFocusMember} />
-        </View>
-      )}
-
       {/* Bottom UI */}
       <View style={[styles.bottomSheet, { backgroundColor: C.toolbarBg, paddingBottom: bottomPadding }]}>
         <BottomBar onFocusMember={handleFocusMember} />
@@ -190,8 +165,8 @@ export default function TrackerScreen() {
         />
       </View>
 
-      {/* Global toast renderer */}
-      <Toast />
+      {/* Global toast renderer — offset below top header */}
+      <Toast topOffset={Math.max(insets.top, 16) + 56 + 8} />
     </View>
   );
 }
@@ -199,24 +174,10 @@ export default function TrackerScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
 
-  topLeft: {
-    position: 'absolute', left: 12,
-    zIndex: 10,
-  },
   bottomLeftControls: {
     position: 'absolute', left: 14,
     zIndex: 15,
   },
-  roomPill: {
-    flexDirection: 'row', alignItems: 'center',
-    borderRadius: 20, borderWidth: 1,
-    paddingHorizontal: 14, paddingVertical: 8,
-    gap: 6,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12, shadowRadius: 4, elevation: 3,
-  },
-  roomCode: { fontWeight: '900', fontSize: 15, letterSpacing: 2 },
-  roomLabel: { fontSize: 16 },
 
   pickingHint: {
     position: 'absolute', alignSelf: 'center',
@@ -226,13 +187,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25, shadowRadius: 6, elevation: 5,
   },
   pickingText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-
-  sidebar: {
-    position: 'absolute', right: 12,
-    width: 220, zIndex: 10,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15, shadowRadius: 10, elevation: 8,
-  },
 
   bottomSheet: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
