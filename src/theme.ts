@@ -53,4 +53,4 @@ export const Colors = {
   },
 } as const;
 
-export type ColorScheme = typeof Colors.light;
+export type ColorScheme = Record<keyof typeof Colors.light, string>;

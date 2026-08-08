@@ -15,7 +15,7 @@ import Toolbar from '../components/Toolbar';
 import MapControls from '../components/MapControls';
 import ConnectionBadge from '../components/ConnectionBadge';
 import FollowIndicator from '../components/FollowIndicator';
-import ToastDriver from '../components/Toast';
+import ToastDriver, { useToastConfig } from '../components/Toast';
 import TopHeader from '../components/TopHeader';
 import Toast from 'react-native-toast-message';
 
@@ -26,6 +26,7 @@ export default function TrackerScreen() {
   const scheme = useAppTheme();
   const C = Colors[scheme];
   const insets = useSafeAreaInsets();
+  const toastConfig = useToastConfig();
 
   const isSessionActive = useStore((s) => s.isSessionActive);
   const followedUid = useStore((s) => s.followedUid);
@@ -166,13 +167,25 @@ export default function TrackerScreen() {
       </View>
 
       {/* Global toast renderer — offset below top header */}
-      <Toast topOffset={Math.max(insets.top, 16) + 56 + 8} />
+      <View style={styles.toastWrapper} pointerEvents="box-none">
+        <Toast config={toastConfig} topOffset={Math.max(insets.top, 16) + 56 + 8} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+
+  toastWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    elevation: 9999,
+  },
 
   bottomLeftControls: {
     position: 'absolute', left: 14,

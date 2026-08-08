@@ -9,30 +9,26 @@ interface Props {
 
 export default function MembersList({ onFocusMember }: Props) {
   const scheme = useAppTheme();
-  const C       = Colors[scheme];
+  const C = Colors[scheme];
 
-  const members       = useStore((s) => s.members);
+  const members = useStore((s) => s.members);
   const memberNumbers = useStore((s) => s.memberNumbers);
-  const myId          = useStore((s) => s.myId);
-  const followedUid   = useStore((s) => s.followedUid);
-  const collapsed     = useStore((s) => s.membersCollapsed);
+  const myId = useStore((s) => s.myId);
+  const followedUid = useStore((s) => s.followedUid);
+  const collapsed = useStore((s) => s.membersCollapsed);
 
   const entries = Object.entries(members);
 
   return (
     <View style={[styles.container, { backgroundColor: C.toolbarBg, borderColor: C.border }]}>
       {/* Header */}
-      <Pressable
-        style={styles.header}
-        onPress={() => useStore.getState().set({ membersCollapsed: !collapsed })}
-      >
+      <Pressable style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={[styles.headerTitle, { color: C.text }]}>Anggota</Text>
           <View style={[styles.countBadge, { backgroundColor: C.primary }]}>
             <Text style={styles.countText}>{entries.length}</Text>
           </View>
         </View>
-        <Text style={{ color: C.muted, fontSize: 13 }}>{collapsed ? '▼' : '▲'}</Text>
       </Pressable>
 
       {/* Horizontal Pill List */}
@@ -43,10 +39,10 @@ export default function MembersList({ onFocusMember }: Props) {
           contentContainerStyle={styles.horizontalList}
         >
           {entries.map(([uid, m]) => {
-            const online      = m.sharing && m.lat != null;
+            const online = m.sharing && m.lat != null;
             const isFollowing = uid === followedUid;
-            const isMe        = uid === myId;
-            const num         = memberNumbers[uid] ?? '?';
+            const isMe = uid === myId;
+            const num = memberNumbers[uid] ?? '?';
 
             return (
               <Pressable
@@ -55,7 +51,7 @@ export default function MembersList({ onFocusMember }: Props) {
                   styles.pillCard,
                   {
                     backgroundColor: isFollowing ? m.color + '33' : m.color + '14',
-                    borderColor:     isFollowing ? m.color : C.border,
+                    borderColor: isFollowing ? m.color : C.border,
                   },
                 ]}
                 onPress={() => onFocusMember(uid)}
@@ -95,10 +91,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle:  { fontWeight: '700', fontSize: 13 },
-  countBadge:   { borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 },
-  countText:    { color: '#fff', fontSize: 11, fontWeight: '700' },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerTitle: { fontWeight: '700', fontSize: 13 },
+  countBadge: { borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 },
+  countText: { color: '#fff', fontSize: 11, fontWeight: '700' },
 
   horizontalList: {
     paddingHorizontal: 12,
@@ -116,7 +112,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
 
-  avatarWrap:  { position: 'relative' },
+  avatarWrap: { position: 'relative' },
   avatar: {
     width: 24,
     height: 24,
@@ -124,7 +120,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarNum:   { color: '#fff', fontSize: 11, fontWeight: '800' },
+  avatarNum: { color: '#fff', fontSize: 11, fontWeight: '800' },
   statusDot: {
     position: 'absolute',
     bottom: -1,

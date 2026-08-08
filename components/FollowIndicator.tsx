@@ -22,7 +22,7 @@ export default function FollowIndicator({ onCancel }: Props) {
   const m = members[followedUid];
 
   return (
-    <View style={[styles.wrap, { top: topOffset + 100, backgroundColor: C.primary + 'EE', shadowColor: C.primary }]}>
+    <View style={[styles.wrap, { top: topOffset + 150, backgroundColor: C.primary + 'EE', shadowColor: C.primary }]}>
       <Text style={styles.text}>
         {m.emoji} Mengikuti {m.name}
       </Text>
