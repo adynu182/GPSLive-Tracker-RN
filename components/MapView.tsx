@@ -6,6 +6,7 @@ import { MAP_STYLES, useAppTheme } from '../src/theme';
 import MemberMarker from './MemberMarker';
 import RouteLayer from './RouteLayer';
 import { requestRoute } from '../src/session';
+import { useSmoothedPosition, MARKER_ANIMATION_DURATION_MS } from '../src/useSmoothedPosition';
 
 interface Props {
   onMapDrag?: () => void;
@@ -50,7 +51,7 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
         center: [myLng, myLat],
         bearing: myHeading ?? 0,
         pitch: 45,
-        duration: 500,
+        duration: MARKER_ANIMATION_DURATION_MS,
       });
       return;
     }
@@ -175,24 +176,32 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
         }}
       />
 
-      {/* Member markers */}
+      {/* Member markers — position eased between GPS fixes (see
+          useSmoothedPosition) so movement glides smoothly instead of
+          jumping on every ~2s update. */}
       {Object.keys(members).map((uid) => {
         const m = members[uid];
         if (m.lat == null || m.lng == null) return null;
-        return (
-          <Marker
-            key={uid}
-            id={`member-${uid}`}
-            lngLat={[m.lng, m.lat]}
-          >
-            <MemberMarker uid={uid} />
-          </Marker>
-        );
+        return <AnimatedMemberMarker key={uid} uid={uid} lat={m.lat} lng={m.lng} />;
       })}
 
       {/* Route polyline + destination pin */}
       <RouteLayer />
     </Map>
+  );
+}
+
+// Wraps a single member's Marker with a smoothed position. Kept as its own
+// component (rather than calling the hook inline inside .map()) so each
+// marker gets its own hook instance correctly scoped to that member — the
+// rules of hooks don't allow calling hooks directly inside a loop callback.
+function AnimatedMemberMarker({ uid, lat, lng }: { uid: string; lat: number; lng: number }) {
+  const pos = useSmoothedPosition(lat, lng);
+  if (!pos) return null;
+  return (
+    <Marker id={`member-${uid}`} lngLat={[pos.lng, pos.lat]}>
+      <MemberMarker uid={uid} />
+    </Marker>
   );
 }
 
