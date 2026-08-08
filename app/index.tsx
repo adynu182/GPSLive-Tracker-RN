@@ -7,7 +7,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Colors, useAppTheme } from '../src/theme';
 import { EMOJIS, COLORS } from '../src/constants';
-import { loadUserData } from '../src/storage';
+import { loadUserData, loadTheme } from '../src/storage';
 import { useStore } from '../src/state';
 import {
   getGeneratedCode, regenerateRoomCode,
@@ -39,16 +39,18 @@ export default function JoinScreen() {
     }
   }, [isSessionActive]);
 
-  // Pre-fill saved user data
+  // Pre-fill saved user data & restore tema
   useEffect(() => {
     (async () => {
-      const data = await loadUserData();
+      const [data, theme] = await Promise.all([loadUserData(), loadTheme()]);
       if (data.myName) setName(data.myName);
       if (data.myEmoji) setEmoji(data.myEmoji);
       if (data.myColor) {
         const idx = COLORS.indexOf(data.myColor);
         if (idx >= 0) setColorIdx(idx);
       }
+      // Restore tema tersimpan ke state (menjamin join screen ikut tema)
+      useStore.getState().set({ appTheme: theme });
     })();
   }, []);
 

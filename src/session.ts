@@ -124,15 +124,18 @@ async function startSession(roomId: string, myId: string): Promise<{ ok: boolean
     const state = getState();
 
     const currentMembers = { ...state.members };
+    const lastKnown = { ...state.lastKnownPositions };
 
-    // Detect departures
+    // Detect departures (member benar-benar keluar dari room)
     Object.keys(currentMembers).forEach((uid) => {
       if (!data[uid] && uid !== myId) {
         const member = currentMembers[uid];
         useStore.getState().set({
-          _toastMsg: `${member.emoji || '🧑'} ${member.name || 'Anggota'} keluar`,
+          _toastMsg: `${member.emoji || '\uD83E\uDDD1'} ${member.name || 'Anggota'} keluar`,
         } as any);
         delete currentMembers[uid];
+        // Hapus lastKnownPositions karena member benar-benar keluar room
+        delete lastKnown[uid];
       }
     });
 
@@ -141,26 +144,38 @@ async function startSession(roomId: string, myId: string): Promise<{ ok: boolean
       const isNew = !currentMembers[uid] && uid !== myId;
       if (isNew) {
         useStore.getState().set({
-          _toastMsg: `${m.emoji || '🧑'} ${m.name || 'Anggota'} bergabung!`,
+          _toastMsg: `${m.emoji || '\uD83E\uDDD1'} ${m.name || 'Anggota'} bergabung!`,
         } as any);
       }
 
       const prev = currentMembers[uid] || {};
-      currentMembers[uid] = {
+      const updated = {
         ...prev,
         ...m,
         name:  m.name  ?? prev.name  ?? 'Anggota',
-        emoji: m.emoji ?? prev.emoji ?? '🧑',
+        emoji: m.emoji ?? prev.emoji ?? '\uD83E\uDDD1',
         color: safeColor(m.color ?? prev.color ?? COLORS[0]),
         isMe:  uid === myId,
       };
+      currentMembers[uid] = updated;
+
+      // Simpan lastKnownPositions setiap kali member punya koordinat valid
+      if (m.lat != null && m.lng != null) {
+        lastKnown[uid] = {
+          lat:   m.lat,
+          lng:   m.lng,
+          name:  updated.name,
+          emoji: updated.emoji,
+          color: updated.color,
+        };
+      }
 
       if (uid === myId && m.joinedAt) {
         useStore.getState().set({ myJoinedAt: m.joinedAt });
       }
     });
 
-    useStore.getState().set({ members: currentMembers });
+    useStore.getState().set({ members: currentMembers, lastKnownPositions: lastKnown });
     useStore.getState().recomputeMemberNumbers();
   });
 

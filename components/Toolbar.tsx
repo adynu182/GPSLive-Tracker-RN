@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Colors, useAppTheme } from '../src/theme';
 import { useStore } from '../src/state';
 import { toggleSharing, performLogout } from '../src/session';
+import { saveTheme } from '../src/storage';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 interface Props {
@@ -32,7 +33,9 @@ export default function Toolbar({
   const routeIconName = routeMode === 'picking' ? 'map-marker' : routeMode === 'active' ? 'close' : 'car';
 
   const handleToggleTheme = () => {
-    useStore.getState().set({ appTheme: appTheme === 'light' ? 'dark' : 'light' });
+    const next = appTheme === 'light' ? 'dark' : 'light';
+    useStore.getState().set({ appTheme: next });
+    saveTheme(next); // persist agar bertahan saat logout / restart
   };
 
   const handleToggleLabels = () => {

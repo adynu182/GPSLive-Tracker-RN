@@ -14,6 +14,15 @@ export interface MemberData {
   deviceId?: string;
 }
 
+/** Posisi terakhir yang diketahui dari member (termasuk yang sedang offline) */
+export interface LastKnownPosition {
+  lat: number;
+  lng: number;
+  name: string;
+  emoji: string;
+  color: string;
+}
+
 export type RouteMode = 'idle' | 'picking' | 'active';
 
 export interface RouteInfo {
@@ -70,8 +79,10 @@ interface AppState {
   routeLastCalc: RouteLastCalc | null;
 
   // ── Members ───────────────────────────────────────────────────
-  members:       Record<string, MemberData>;
-  memberNumbers: Record<string, number>;
+  members:            Record<string, MemberData>;
+  memberNumbers:      Record<string, number>;
+  /** Posisi terakhir yang diketahui — tetap ada meski member offline, dihapus hanya saat keluar room */
+  lastKnownPositions: Record<string, LastKnownPosition>;
 
   // ── UI ────────────────────────────────────────────────────────
   connected:        boolean;
@@ -121,8 +132,9 @@ const initialState: Omit<AppState, 'set' | 'recomputeMemberNumbers' | 'reset'> =
   routeDest:     null,
   routeInfo:     null,
   routeLastCalc: null,
-  members:       {},
-  memberNumbers: {},
+  members:            {},
+  memberNumbers:      {},
+  lastKnownPositions: {},
   connected:        true,
   membersCollapsed: false,
   showLabels:       true,
@@ -155,7 +167,7 @@ export const useStore = create<AppState>((storeSet, get) => ({
     storeSet({ memberNumbers: numbers });
   },
 
-  reset: () => storeSet({ ...initialState }),
+  reset: () => storeSet((s) => ({ ...initialState, appTheme: s.appTheme })),
 }));
 
 // ─── Convenience getter (outside React) ─────────────────────────

@@ -7,6 +7,7 @@ const KEY_EMOJI     = 'lokasi_emoji';
 const KEY_COLOR     = 'lokasi_color';
 const KEY_ROOM      = 'lokasi_room';
 const KEY_DEVICE_ID = 'lokasi_device_id';
+const KEY_THEME     = 'lokasi_theme';
 
 // ─── Simpan preferensi user ───────────────────────────────────────
 export async function saveUserData(data: {
@@ -49,6 +50,16 @@ export async function loadUserData(): Promise<{
 // ─── Kode room terakhir yang dipakai user ─────────────────────────
 export async function getSavedRoomCode(): Promise<string> {
   return (await AsyncStorage.getItem(KEY_ROOM)) || '';
+}
+
+// ─── Simpan & muat preferensi tema ───────────────────────────────
+export async function saveTheme(theme: 'light' | 'dark'): Promise<void> {
+  await AsyncStorage.setItem(KEY_THEME, theme);
+}
+
+export async function loadTheme(): Promise<'light' | 'dark'> {
+  const v = await AsyncStorage.getItem(KEY_THEME);
+  return v === 'dark' ? 'dark' : 'light';
 }
 
 // ─── Clear room session data saat logout ──────────────────────────

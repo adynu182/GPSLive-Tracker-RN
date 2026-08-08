@@ -30,6 +30,7 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
   const zoomOutCounter = useStore((s) => s.zoomOutCounter);
   const resetCompassCounter = useStore((s) => s.resetCompassCounter);
   const navZoomCounter = useStore((s) => s.navZoomCounter);
+  const lastKnownPositions = useStore((s) => s.lastKnownPositions);
 
   const appTheme = useAppTheme();
   const styleUrl = MAP_STYLES[appTheme];
@@ -96,19 +97,30 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
     cameraRef.current.zoomTo(18, { duration: 500 });
   }, [navZoomCounter]);
 
-  // ── Fit all members ────────────────────────────────────────────
+  // ── Fit all members (online + offline yang masih di room) ────────────────────────────────────
   useEffect(() => {
     if (!fitAllCounter || !cameraRef.current) return;
-    const activeMembers = Object.values(members).filter(
-      (m) => m.lat != null && m.lng != null && m.sharing !== false,
-    );
+
+    // Kumpulkan semua koordinat: posisi terakhir yang diketahui (online & offline)
+    // lastKnownPositions hanya dihapus saat member benar-benar keluar room.
+    const coords: Array<{ lat: number; lng: number }> = [
+      ...Object.values(lastKnownPositions),
+    ];
+
+    // Sertakan posisi saya sendiri
+    const { myLat, myLng } = useStore.getState();
+    if (myLat != null && myLng != null) {
+      coords.push({ lat: myLat, lng: myLng });
+    }
+
+    if (coords.length === 0) return;
 
     let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
-    activeMembers.forEach((m) => {
-      if (m.lat! < minLat) minLat = m.lat!;
-      if (m.lat! > maxLat) maxLat = m.lat!;
-      if (m.lng! < minLng) minLng = m.lng!;
-      if (m.lng! > maxLng) maxLng = m.lng!;
+    coords.forEach(({ lat, lng }) => {
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+      if (lng < minLng) minLng = lng;
+      if (lng > maxLng) maxLng = lng;
     });
 
     // Minimum bounding box delta (~100m) to prevent fitBounds from zooming in beyond level 18
