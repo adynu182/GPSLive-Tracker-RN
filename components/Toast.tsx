@@ -1,11 +1,7 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../src/state';
 import Toast, { BaseToast, ErrorToast, ToastConfig } from 'react-native-toast-message';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, ColorScheme, useAppTheme } from '../src/theme';
-
-// Height of TopHeader inner row (paddingBottom 10 + content ~36 + divider ≈ 56)
-const HEADER_INNER_HEIGHT = 56;
 
 export function getToastConfig(C: ColorScheme): ToastConfig {
   return {
@@ -109,22 +105,39 @@ export function useToastConfig(): ToastConfig {
 }
 
 /**
- * ToastDriver — listens to `_toastMsg` in Zustand store and shows a toast.
- * Positions the toast below the TopHeader automatically.
+ * ToastDriver — mengonsumsi `toastQueue` di Zustand store satu per satu.
+ * Setiap toast ditampilkan sampai selesai (lewat callback `onHide`) baru
+ * toast berikutnya di antrian ditampilkan — supaya kalau ada beberapa
+ * notifikasi datang hampir bersamaan (mis. 2 member keluar sekaligus),
+ * semuanya tetap sempat terlihat berurutan, bukan cuma yang terakhir.
+ *
+ * Posisi vertikal (`toastTopOffset`) sengaja diambil dari store, bukan
+ * dihitung di sini — karena tiap layar (Join, Tracker) punya layout
+ * header yang beda, dan layar itu sendiri yang paling tahu offset yang
+ * pas untuk dirinya (lihat efek di app/index.tsx & app/tracker.tsx).
  */
 export default function ToastDriver() {
-  const msg    = useStore((s) => (s as any)._toastMsg as string | null);
-  const insets = useSafeAreaInsets();
-
-  // topOffset = safe-area top (min 16) + header row height + gap
-  const topOffset = Math.max(insets.top, 16) + HEADER_INNER_HEIGHT + 8;
+  const queue      = useStore((s) => s.toastQueue);
+  const topOffset  = useStore((s) => s.toastTopOffset);
+  const showing    = useRef(false);
 
   useEffect(() => {
-    if (!msg) return;
-    Toast.show({ type: 'info', text1: msg, topOffset });
-    // Clear so it doesn't re-fire
-    useStore.getState().set({ _toastMsg: null } as any);
-  }, [msg]);
+    if (showing.current || queue.length === 0) return;
+    showing.current = true;
+
+    Toast.show({
+      type: queue[0].type ?? 'info',
+      text1: queue[0].text,
+      topOffset,
+      onHide: () => {
+        showing.current = false;
+        // Buang pesan yang baru selesai ditampilkan dari depan antrian.
+        // Ini men-trigger effect ini lagi (queue berubah) untuk lanjut ke
+        // pesan berikutnya, kalau masih ada.
+        useStore.getState().set({ toastQueue: useStore.getState().toastQueue.slice(1) });
+      },
+    });
+  }, [queue, topOffset]);
 
   return null;
 }

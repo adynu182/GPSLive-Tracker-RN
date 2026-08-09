@@ -108,7 +108,6 @@ export default function MapView({ onMapDrag, onMapTap }: Props) {
     ];
 
     // Sertakan posisi saya sendiri
-    const { myLat, myLng } = useStore.getState();
     if (myLat != null && myLng != null) {
       coords.push({ lat: myLat, lng: myLng });
     }

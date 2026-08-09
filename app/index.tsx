@@ -7,7 +7,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Colors, useAppTheme } from '../src/theme';
 import { EMOJIS, COLORS } from '../src/constants';
-import { loadUserData, loadTheme } from '../src/storage';
+import { loadUserData } from '../src/storage';
 import { useStore } from '../src/state';
 import {
   getGeneratedCode, regenerateRoomCode,
@@ -15,7 +15,7 @@ import {
   setJoinCode, getJoinCode,
 } from '../src/room';
 import { startTracking, startOfflineNav } from '../src/session';
-import Toast from 'react-native-toast-message';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function JoinScreen() {
   const router = useRouter();
@@ -31,6 +31,14 @@ export default function JoinScreen() {
   const [colorIdx, setColorIdx] = useState(0);
 
   const isSessionActive = useStore((s) => s.isSessionActive);
+  const insets = useSafeAreaInsets();
+
+  // Root <Toast> tunggal ada di app/_layout.tsx (lihat komentar di sana).
+  // Layar ini tidak punya header custom seperti TrackerScreen, jadi cukup
+  // offset standar dari safe-area atas.
+  useEffect(() => {
+    useStore.getState().set({ toastTopOffset: Math.max(insets.top, 16) + 8 });
+  }, [insets.top]);
 
   // Navigate to tracker as soon as session is active
   useEffect(() => {
@@ -39,18 +47,16 @@ export default function JoinScreen() {
     }
   }, [isSessionActive]);
 
-  // Pre-fill saved user data & restore tema
+  // Pre-fill saved user data (tema sudah dimuat lebih awal di root layout)
   useEffect(() => {
     (async () => {
-      const [data, theme] = await Promise.all([loadUserData(), loadTheme()]);
+      const data = await loadUserData();
       if (data.myName) setName(data.myName);
       if (data.myEmoji) setEmoji(data.myEmoji);
       if (data.myColor) {
         const idx = COLORS.indexOf(data.myColor);
         if (idx >= 0) setColorIdx(idx);
       }
-      // Restore tema tersimpan ke state (menjamin join screen ikut tema)
-      useStore.getState().set({ appTheme: theme });
     })();
   }, []);
 
@@ -75,7 +81,7 @@ export default function JoinScreen() {
     const result = await startTracking(name);
     setLoading(false);
     if (!result.ok) {
-      Toast.show({ type: 'error', text1: result.error });
+      useStore.getState().pushToast(result.error || 'Gagal memulai sesi', 'error');
     }
   };
 

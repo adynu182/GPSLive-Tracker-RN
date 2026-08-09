@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Colors, useAppTheme } from '../src/theme';
 import { useStore } from '../src/state';
-import { toggleSharing, performLogout } from '../src/session';
+import { toggleSharing } from '../src/session';
 import { saveTheme } from '../src/storage';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
@@ -11,6 +11,10 @@ interface Props {
   accuracyLevel: 'good' | 'medium' | 'poor';
   onToggleRoute: () => void;
   onFitAll: () => void;
+  /** Dipanggil saat tombol logout ditekan. Diteruskan dari layar pemanggil
+   *  (app/tracker.tsx) supaya konfirmasi (Alert) tetap tampil sebelum
+   *  benar-benar keluar — Toolbar sendiri tidak lagi memutuskan itu. */
+  onLogout: () => void;
 }
 
 export default function Toolbar({
@@ -18,6 +22,7 @@ export default function Toolbar({
   accuracyLevel,
   onToggleRoute,
   onFitAll,
+  onLogout,
 }: Props) {
   const scheme = useAppTheme();
   const C = Colors[scheme];
@@ -94,7 +99,7 @@ export default function Toolbar({
         </Pressable>
 
         {/* Logout */}
-        <Pressable style={[styles.btn, styles.logoutBtn]} onPress={() => performLogout()}>
+        <Pressable style={[styles.btn, styles.logoutBtn]} onPress={onLogout}>
           <MaterialCommunityIcons name="logout" size={24} color={C.text} />
         </Pressable>
       </View>

@@ -15,9 +15,8 @@ import Toolbar from '../components/Toolbar';
 import MapControls from '../components/MapControls';
 import ConnectionBadge from '../components/ConnectionBadge';
 import FollowIndicator from '../components/FollowIndicator';
-import ToastDriver, { useToastConfig } from '../components/Toast';
+import ToastDriver from '../components/Toast';
 import TopHeader from '../components/TopHeader';
-import Toast from 'react-native-toast-message';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,7 +25,6 @@ export default function TrackerScreen() {
   const scheme = useAppTheme();
   const C = Colors[scheme];
   const insets = useSafeAreaInsets();
-  const toastConfig = useToastConfig();
 
   const isSessionActive = useStore((s) => s.isSessionActive);
   const followedUid = useStore((s) => s.followedUid);
@@ -36,7 +34,6 @@ export default function TrackerScreen() {
   const [accuracyStr, setAccuracyStr] = useState('–');
   const [accuracyLevel, setAccuracyLevel] = useState<'good' | 'medium' | 'poor'>('poor');
 
-  const topOffset = Math.max(insets.top, 16);
   const bottomPadding = Math.max(insets.bottom, 12);
 
   // Redirect to join if no active session
@@ -45,6 +42,21 @@ export default function TrackerScreen() {
       router.replace('/');
     }
   }, [isSessionActive]);
+
+  // Toast di layar ini diposisikan di bawah TopHeader (chip room + panel
+  // member), bukan mepet paling atas. Root <Toast> tunggal ada di
+  // app/_layout.tsx dan membaca offset ini dari store — lihat komentar
+  // di sana untuk alasan kenapa cuma ada satu instance Toast global.
+  useEffect(() => {
+    const HEADER_INNER_HEIGHT = 56; // tinggi baris TopHeader (padding + konten + divider)
+    useStore.getState().set({ toastTopOffset: Math.max(insets.top, 16) + HEADER_INNER_HEIGHT + 8 });
+    return () => {
+      // Kembalikan ke default umum saat layar ini di-unmount (mis. logout),
+      // supaya toast berikutnya di layar lain tidak memakai offset milik
+      // TopHeader yang sudah tidak ada.
+      useStore.getState().set({ toastTopOffset: Math.max(insets.top, 16) + 8 });
+    };
+  }, [insets.top]);
 
   // Start GPS when screen mounts
   useEffect(() => {
@@ -128,7 +140,7 @@ export default function TrackerScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: C.background }]}>
-      {/* Toast driver (reads _toastMsg from state) */}
+      {/* Toast driver (mengonsumsi toastQueue dari state) */}
       <ToastDriver />
 
       {/* Map */}
@@ -163,12 +175,8 @@ export default function TrackerScreen() {
           accuracyLevel={accuracyLevel}
           onToggleRoute={handleToggleRoute}
           onFitAll={handleFitAll}
+          onLogout={handleLogout}
         />
-      </View>
-
-      {/* Global toast renderer — offset below top header */}
-      <View style={styles.toastWrapper} pointerEvents="box-none">
-        <Toast config={toastConfig} topOffset={Math.max(insets.top, 16) + 56 + 8} />
       </View>
     </View>
   );
@@ -176,16 +184,6 @@ export default function TrackerScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-
-  toastWrapper: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 9999,
-    elevation: 9999,
-  },
 
   bottomLeftControls: {
     position: 'absolute', left: 14,

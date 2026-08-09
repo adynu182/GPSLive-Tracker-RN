@@ -21,14 +21,18 @@ export default function MembersList({ onFocusMember }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: C.toolbarBg, borderColor: C.border }]}>
-      {/* Header */}
-      <Pressable style={styles.header}>
+      {/* Header — ketuk untuk collapse/expand daftar member */}
+      <Pressable
+        style={styles.header}
+        onPress={() => useStore.getState().set({ membersCollapsed: !collapsed })}
+      >
         <View style={styles.headerLeft}>
           <Text style={[styles.headerTitle, { color: C.text }]}>Anggota</Text>
           <View style={[styles.countBadge, { backgroundColor: C.primary }]}>
             <Text style={styles.countText}>{entries.length}</Text>
           </View>
         </View>
+        <Text style={[styles.collapseIcon, { color: C.muted }]}>{collapsed ? '▼' : '▲'}</Text>
       </Pressable>
 
       {/* Horizontal Pill List */}
@@ -95,6 +99,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontWeight: '700', fontSize: 13 },
   countBadge: { borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 },
   countText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  collapseIcon: { fontSize: 11, fontWeight: '700' },
 
   horizontalList: {
     paddingHorizontal: 12,

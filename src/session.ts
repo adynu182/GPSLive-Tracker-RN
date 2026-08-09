@@ -12,6 +12,20 @@ import { getSelectedRoomId } from './room';
 import { requestWakeLock, releaseWakeLock } from './wakelock';
 import { clearSessionData } from './storage';
 
+// ─── Firebase listener lifecycle ──────────────────────────────────
+// onValue() mengembalikan fungsi unsubscribe (sinkron) yang HARUS dipanggil
+// saat sesi berakhir — kalau tidak, listener lama tetap hidup dan menumpuk
+// setiap kali user logout lalu join lagi tanpa restart app.
+let _unsubMembers:   (() => void) | null = null;
+let _unsubConnected: (() => void) | null = null;
+
+function unsubscribeListeners(): void {
+  _unsubMembers?.();
+  _unsubMembers = null;
+  _unsubConnected?.();
+  _unsubConnected = null;
+}
+
 // ─── Firebase presence write ──────────────────────────────────────
 async function writeMyPresence(roomId: string, myId: string, full = true) {
   if (!db) return;
@@ -113,26 +127,39 @@ export function startOfflineNav() {
 async function startSession(roomId: string, myId: string): Promise<{ ok: boolean; error?: string }> {
   if (!db) return { ok: false, error: 'Firebase not ready' };
 
+  // Jaga-jaga kalau startSession terpanggil lagi tanpa performLogout() di
+  // antaranya (mis. double-tap) — pastikan tidak ada listener sesi lama
+  // yang masih nyantol sebelum pasang yang baru.
+  unsubscribeListeners();
+
   requestWakeLock();
 
   // Write initial presence
   await writeMyPresence(roomId, myId, true);
 
   // ── Members listener ──────────────────────────────────────────
-  onValue(ref(db, `rooms/${roomId}/members`), (snap) => {
+  // isFirstSnapshot: snapshot pertama berisi SEMUA member yang sudah ada
+  // di room sebelum saya join — bukan orang yang baru saja bergabung.
+  // Tanpa guard ini, semua orang yang sudah lama di room akan salah
+  // dianggap "baru bergabung" begitu saya connect.
+  let isFirstSnapshot = true;
+
+  _unsubMembers = onValue(ref(db, `rooms/${roomId}/members`), (snap) => {
     const data: Record<string, any> = snap.val() || {};
     const state = getState();
 
     const currentMembers = { ...state.members };
     const lastKnown = { ...state.lastKnownPositions };
+    const wasFirstSnapshot = isFirstSnapshot;
+    isFirstSnapshot = false;
 
     // Detect departures (member benar-benar keluar dari room)
     Object.keys(currentMembers).forEach((uid) => {
       if (!data[uid] && uid !== myId) {
         const member = currentMembers[uid];
-        useStore.getState().set({
-          _toastMsg: `${member.emoji || '\uD83E\uDDD1'} ${member.name || 'Anggota'} keluar`,
-        } as any);
+        useStore.getState().pushToast(
+          `${member.emoji || '\uD83E\uDDD1'} ${member.name || 'Anggota'} keluar`,
+        );
         delete currentMembers[uid];
         // Hapus lastKnownPositions karena member benar-benar keluar room
         delete lastKnown[uid];
@@ -142,10 +169,12 @@ async function startSession(roomId: string, myId: string): Promise<{ ok: boolean
     // Detect arrivals / updates
     Object.entries(data).forEach(([uid, m]: [string, any]) => {
       const isNew = !currentMembers[uid] && uid !== myId;
-      if (isNew) {
-        useStore.getState().set({
-          _toastMsg: `${m.emoji || '\uD83E\uDDD1'} ${m.name || 'Anggota'} bergabung!`,
-        } as any);
+      // Jangan toast "bergabung" untuk snapshot pertama — itu cuma daftar
+      // member yang sudah ada di room, bukan kejadian join yang baru saja.
+      if (isNew && !wasFirstSnapshot) {
+        useStore.getState().pushToast(
+          `${m.emoji || '\uD83E\uDDD1'} ${m.name || 'Anggota'} bergabung!`,
+        );
       }
 
       const prev = currentMembers[uid] || {};
@@ -180,7 +209,7 @@ async function startSession(roomId: string, myId: string): Promise<{ ok: boolean
   });
 
   // ── Connection listener ───────────────────────────────────────
-  onValue(ref(db, '.info/connected'), (snap) => {
+  _unsubConnected = onValue(ref(db, '.info/connected'), (snap) => {
     const connected = snap.val() === true;
     const prev = getState().connected;
     useStore.getState().set({ connected });
@@ -199,6 +228,7 @@ async function startSession(roomId: string, myId: string): Promise<{ ok: boolean
 export async function performLogout(): Promise<void> {
   const { myId, roomId } = getState();
 
+  unsubscribeListeners();
   stopGPS();
   releaseWakeLock();
 
@@ -251,13 +281,13 @@ export async function requestRoute(fromLat: number, fromLng: number, toLat: numb
     data = await res.json();
   } catch (err) {
     _requestInFlight = false;
-    useStore.getState().set({ _toastMsg: '⚠️ Gagal menghitung rute — coba lagi' } as any);
+    useStore.getState().pushToast('⚠️ Gagal menghitung rute — coba lagi');
     return;
   }
   _requestInFlight = false;
 
   if (data.code !== 'Ok' || !data.routes?.length) {
-    useStore.getState().set({ _toastMsg: '⚠️ Rute ke titik itu tidak ditemukan' } as any);
+    useStore.getState().pushToast('⚠️ Rute ke titik itu tidak ditemukan');
     return;
   }
 
@@ -273,13 +303,13 @@ export async function requestRoute(fromLat: number, fromLng: number, toLat: numb
 
   if (route.distance < ARRIVED_DIST_M) {
     useStore.getState().set({
-      _toastMsg: '🏁 Sampai tujuan!',
       routeMode: 'idle',
       routeDest: null,
       routeInfo: null,
       routeLastCalc: null,
       routeGeometry: null,
     } as any);
+    useStore.getState().pushToast('🏁 Sampai tujuan!');
   }
 }
 

@@ -23,6 +23,12 @@ export interface LastKnownPosition {
   color: string;
 }
 
+/** Satu item di antrian toast. `type` menentukan gaya (info/success/error). */
+export interface ToastItem {
+  text: string;
+  type?: 'info' | 'success' | 'error';
+}
+
 export type RouteMode = 'idle' | 'picking' | 'active';
 
 export interface RouteInfo {
@@ -91,7 +97,8 @@ interface AppState {
   isSessionActive:  boolean; // true once startSession() succeeds → switch to tracker screen
 
   // ── Toast ─────────────────────────────────────────────────────
-  _toastMsg: string | null; // set to show a toast; component reads + clears it
+  toastQueue:     ToastItem[]; // antrian pesan toast — FIFO, satu tampil sampai selesai baru lanjut
+  toastTopOffset: number;      // jarak dari atas layar; di-set tiap layar sesuai layoutnya sendiri
 
   // ── Route geometry (GeoJSON from OSRM) ───────────────────────
   routeGeometry: object | null;
@@ -107,9 +114,13 @@ interface AppState {
   set: (partial: Partial<Omit<AppState, 'set'>>) => void;
   recomputeMemberNumbers: () => void;
   reset: () => void;
+  /** Tambah pesan ke antrian toast. Aman dipanggil berkali-kali secara
+   *  berurutan (mis. dalam forEach) — tiap panggilan menambah ke antrian
+   *  yang sudah ter-update dari panggilan sebelumnya, bukan menimpanya. */
+  pushToast: (text: string, type?: ToastItem['type']) => void;
 }
 
-const initialState: Omit<AppState, 'set' | 'recomputeMemberNumbers' | 'reset'> = {
+const initialState: Omit<AppState, 'set' | 'recomputeMemberNumbers' | 'reset' | 'pushToast'> = {
   myId:        null,
   myName:      null,
   myEmoji:     '🧑',
@@ -139,7 +150,8 @@ const initialState: Omit<AppState, 'set' | 'recomputeMemberNumbers' | 'reset'> =
   membersCollapsed: false,
   showLabels:       true,
   isSessionActive:  false,
-  _toastMsg:        null,
+  toastQueue:       [],
+  toastTopOffset:   40,
   routeGeometry:    null,
   fitAllCounter:       0,
   zoomInCounter:       0,
@@ -168,6 +180,12 @@ export const useStore = create<AppState>((storeSet, get) => ({
   },
 
   reset: () => storeSet((s) => ({ ...initialState, appTheme: s.appTheme })),
+
+  // Pakai functional updater (bukan set() biasa yang cuma shallow-merge
+  // objek statis) supaya beberapa panggilan pushToast() berurutan dalam
+  // satu tick sinkron (mis. loop forEach saat banyak member keluar/masuk
+  // sekaligus) terakumulasi di antrian, bukan saling menimpa.
+  pushToast: (text, type) => storeSet((s) => ({ toastQueue: [...s.toastQueue, { text, type }] })),
 }));
 
 // ─── Convenience getter (outside React) ─────────────────────────
