@@ -122,7 +122,7 @@ export async function startGPS(onPosition: (lat: number, lng: number, accuracy: 
 export function stopGPS(): void {
   _watchSub?.remove();
   _watchSub = null;
-  (_headingSub as any)?.remove?.();
+  _headingSub?.remove();
   _headingSub = null;
   if (_simInterval) {
     clearInterval(_simInterval);

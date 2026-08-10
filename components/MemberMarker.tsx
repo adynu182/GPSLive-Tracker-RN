@@ -90,5 +90,4 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: 'transparent', borderWidth: 0,
   },
-  arrowIcon: { fontSize: 22, color: '#247066' },
 });

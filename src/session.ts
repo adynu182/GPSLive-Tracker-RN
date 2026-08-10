@@ -26,6 +26,28 @@ function unsubscribeListeners(): void {
   _unsubConnected = null;
 }
 
+// ─── Timeout guard untuk operasi jaringan ─────────────────────────
+// Firebase RTDB tidak punya timeout bawaan untuk read/write saat device
+// BENAR-BENAR offline (bukan sekadar lambat) — Promise dari get()/set()
+// bisa menggantung tanpa batas waktu sampai koneksi kembali, alih-alih
+// reject dengan error. Tanpa ini, tombol "Bagikan Lokasi" akan terus
+// berputar tanpa feedback apapun kalau device tidak ada internet sama
+// sekali. withTimeout() memaksa operasi itu gagal dengan pesan yang jelas
+// setelah `ms` milidetik, supaya UI (lihat handleStart di app/index.tsx)
+// bisa berhenti loading dan menampilkan toast error seperti biasa.
+function withTimeout<T>(promise: Promise<T>, ms: number, timeoutMessage: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(timeoutMessage)), ms);
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (err) => { clearTimeout(timer); reject(err); },
+    );
+  });
+}
+
+const NAME_CHECK_TIMEOUT_MS = 6000;   // cek nama duplikat — boleh gagal cepat, tidak kritis
+const PRESENCE_TIMEOUT_MS   = 10000;  // tulis presence awal — ini yang menentukan join berhasil/tidak
+
 // ─── Firebase presence write ──────────────────────────────────────
 async function writeMyPresence(roomId: string, myId: string, full = true) {
   if (!db) return;
@@ -33,17 +55,21 @@ async function writeMyPresence(roomId: string, myId: string, full = true) {
   const deviceId = await getDeviceId();
   const myRef = ref(db, `rooms/${roomId}/members/${myId}`);
   if (full) {
-    await set(myRef, {
-      name:     myName,
-      emoji:    myEmoji,
-      color:    myColor,
-      sharing:  sharingOn,
-      lat:      myLat ?? null,
-      lng:      myLng ?? null,
-      ts:       serverTimestamp(),
-      joinedAt: myJoinedAt ?? serverTimestamp(),
-      deviceId,
-    });
+    await withTimeout(
+      set(myRef, {
+        name:     myName,
+        emoji:    myEmoji,
+        color:    myColor,
+        sharing:  sharingOn,
+        lat:      myLat ?? null,
+        lng:      myLng ?? null,
+        ts:       serverTimestamp(),
+        joinedAt: myJoinedAt ?? serverTimestamp(),
+        deviceId,
+      }),
+      PRESENCE_TIMEOUT_MS,
+      'Tidak ada koneksi internet',
+    );
   }
   onDisconnect(myRef).remove();
 }
@@ -64,7 +90,11 @@ export async function startTracking(name: string): Promise<{
 
   // Check for duplicate name in room
   try {
-    const snapshot = await get(ref(db, `rooms/${roomId}/members`));
+    const snapshot = await withTimeout(
+      get(ref(db, `rooms/${roomId}/members`)),
+      NAME_CHECK_TIMEOUT_MS,
+      'Timeout saat memeriksa nama',
+    );
     if (snapshot.exists()) {
       const deviceId = await getDeviceId();
       const isNameTaken = Object.values(snapshot.val() as Record<string, any>).some(
@@ -134,8 +164,17 @@ async function startSession(roomId: string, myId: string): Promise<{ ok: boolean
 
   requestWakeLock();
 
-  // Write initial presence
-  await writeMyPresence(roomId, myId, true);
+  // Write initial presence — dibungkus try/catch supaya kalau gagal/timeout
+  // (mis. tidak ada internet sama sekali), fungsi ini balik dengan pesan
+  // error yang jelas alih-alih macet tanpa batas waktu atau reject tanpa
+  // tertangkap (handleStart di app/index.tsx tidak bungkus await ini
+  // dengan try/catch, jadi startSession/startTracking TIDAK BOLEH throw).
+  try {
+    await writeMyPresence(roomId, myId, true);
+  } catch (err) {
+    releaseWakeLock();
+    return { ok: false, error: '⚠️ Tidak ada koneksi internet. Coba lagi.' };
+  }
 
   // ── Members listener ──────────────────────────────────────────
   // isFirstSnapshot: snapshot pertama berisi SEMUA member yang sudah ada
@@ -214,8 +253,10 @@ async function startSession(roomId: string, myId: string): Promise<{ ok: boolean
     const prev = getState().connected;
     useStore.getState().set({ connected });
     if (connected && !prev) {
-      // Reconnected — re-write presence
-      writeMyPresence(roomId, myId, true);
+      // Reconnected — re-write presence. Fire-and-forget (tidak di-await,
+      // tidak ada loading state yang menunggu ini) — .catch() cuma jaga-jaga
+      // supaya kalau timeout lagi di sini, tidak jadi unhandled rejection.
+      writeMyPresence(roomId, myId, true).catch(() => {});
     }
   });
 

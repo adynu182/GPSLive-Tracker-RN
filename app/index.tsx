@@ -1,18 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, FlatList,
   StyleSheet, ScrollView, ActivityIndicator,
-  KeyboardAvoidingView, Platform, Switch,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, useAppTheme } from '../src/theme';
-import { EMOJIS, COLORS } from '../src/constants';
+import { EMOJIS } from '../src/constants';
 import { loadUserData } from '../src/storage';
 import { useStore } from '../src/state';
 import {
   getGeneratedCode, regenerateRoomCode,
-  selectRoomTab, getActiveTab,
-  setJoinCode, getJoinCode,
+  selectRoomTab,
+  setJoinCode,
 } from '../src/room';
 import { startTracking, startOfflineNav } from '../src/session';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,7 +28,6 @@ export default function JoinScreen() {
   const [joinCode, setJoinCodeState] = useState('');
   const [roomCode, setRoomCode] = useState(getGeneratedCode());
   const [loading, setLoading] = useState(false);
-  const [colorIdx, setColorIdx] = useState(0);
 
   const isSessionActive = useStore((s) => s.isSessionActive);
   const insets = useSafeAreaInsets();
@@ -53,10 +52,6 @@ export default function JoinScreen() {
       const data = await loadUserData();
       if (data.myName) setName(data.myName);
       if (data.myEmoji) setEmoji(data.myEmoji);
-      if (data.myColor) {
-        const idx = COLORS.indexOf(data.myColor);
-        if (idx >= 0) setColorIdx(idx);
-      }
     })();
   }, []);
 
@@ -88,8 +83,6 @@ export default function JoinScreen() {
   const handleOfflineNav = () => {
     startOfflineNav();
   };
-
-  const myColor = COLORS[colorIdx % COLORS.length];
 
   return (
     <KeyboardAvoidingView
@@ -279,10 +272,6 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'transparent',
   },
   emojiText: { fontSize: 22 },
-
-  colorRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  colorDot: { width: 16, height: 16, borderRadius: 8, marginRight: 8 },
-  colorLabel: { fontSize: 13 },
 
   primaryBtn: {
     borderRadius: 14, paddingVertical: 16,
