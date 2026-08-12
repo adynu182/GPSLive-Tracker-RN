@@ -1,8 +1,9 @@
 import {
   ref, set, onValue, onDisconnect,
   serverTimestamp, remove,
-  get,
+  get, goOnline,
 } from 'firebase/database';
+import NetInfo from '@react-native-community/netinfo';
 import { db } from './firebase';
 import { useStore, getState } from './state';
 import { COLORS, genId, safeColor } from './constants';
@@ -18,12 +19,15 @@ import { clearSessionData } from './storage';
 // setiap kali user logout lalu join lagi tanpa restart app.
 let _unsubMembers:   (() => void) | null = null;
 let _unsubConnected: (() => void) | null = null;
+let _unsubNetInfo:   (() => void) | null = null;
 
 function unsubscribeListeners(): void {
   _unsubMembers?.();
   _unsubMembers = null;
   _unsubConnected?.();
   _unsubConnected = null;
+  _unsubNetInfo?.();
+  _unsubNetInfo = null;
 }
 
 // ─── Timeout guard untuk operasi jaringan ─────────────────────────
@@ -128,19 +132,30 @@ export async function startTracking(name: string): Promise<{
 
   await saveUserData({ myName, myEmoji, myColor, roomId });
 
-  return startSession(roomId, myId);
+  const result = await startSession(roomId, myId);
+  if (!result.ok) {
+    // Rollback — kalau tidak, myId/roomId yang gagal ini bisa "nyangkut"
+    // dan diwarisi tanpa sengaja oleh startOfflineNav() atau membuat
+    // performLogout() mencoba menghapus data room yang sebenarnya tidak
+    // pernah benar-benar berhasil dibuat.
+    useStore.getState().set({ myId: null, roomId: null });
+  }
+  return result;
 }
 
 // ─── Start Offline Nav — no Firebase, no room ─────────────────────
 export function startOfflineNav() {
-  const { myId, myEmoji, colorIdx } = getState();
-  const id    = myId || genId();
-  // Sama seperti di startTracking(): jangan fallback ke state.myColor
-  // (selalu truthy = COLORS[0]) — pakai colorIdx murni.
+  const { myEmoji, colorIdx } = getState();
+  // Selalu bikin id baru — JANGAN warisi myId dari percobaan startTracking()
+  // yang mungkin gagal sebelumnya (kasus itu sekarang sudah di-rollback ke
+  // null juga, tapi ini jaga-jaga tambahan supaya startOfflineNav() selalu
+  // mulai dari keadaan bersih apapun yang terjadi sebelumnya).
+  const id    = genId();
   const color = COLORS[colorIdx % COLORS.length];
 
   useStore.getState().set({
     myId:        id,
+    roomId:      null, // pastikan bersih dari room manapun — ini navigasi lokal, tanpa Firebase
     myName:      'Saya',
     myColor:     color,
     offlineMode: true,
@@ -266,12 +281,27 @@ async function startSession(roomId: string, myId: string): Promise<{ ok: boolean
     }
   });
 
+  // SDK Firebase tidak selalu otomatis sadar begitu OS melaporkan jaringan
+  // sudah kembali — terutama di React Native, dan makin lama offline makin
+  // besar kemungkinan proses reconnect internalnya butuh dorongan (lihat
+  // badge "Offline — mencoba sambung kembali…" yang kadang nyangkut).
+  // Begitu NetInfo bilang device online tapi Firebase (state.connected)
+  // masih menganggap dirinya offline, paksa reconnect secara eksplisit.
+  _unsubNetInfo = NetInfo.addEventListener((netState) => {
+    const looksOnline = netState.isConnected === true && netState.isInternetReachable !== false;
+    if (looksOnline && !getState().connected && db) {
+      goOnline(db);
+    }
+  });
+
   useStore.getState().set({ isSessionActive: true });
 
   return { ok: true };
 }
 
 // ─── Logout ───────────────────────────────────────────────────────
+const LOGOUT_REMOVE_TIMEOUT_MS = 5000;
+
 export async function performLogout(): Promise<void> {
   const { myId, roomId } = getState();
 
@@ -280,7 +310,21 @@ export async function performLogout(): Promise<void> {
   releaseWakeLock();
 
   if (db && myId && roomId) {
-    await remove(ref(db, `rooms/${roomId}/members/${myId}`));
+    // Jangan biarkan logout macet cuma karena tidak bisa menghapus data di
+    // server saat offline — kalau timeout/gagal, tetap lanjut keluar.
+    // Firebase sudah punya onDisconnect().remove() (lihat writeMyPresence)
+    // yang membereskan node ini otomatis begitu server mendeteksi koneksi
+    // client benar-benar putus, jadi tidak wajib ditunggu sampai berhasil
+    // di sini juga.
+    try {
+      await withTimeout(
+        remove(ref(db, `rooms/${roomId}/members/${myId}`)),
+        LOGOUT_REMOVE_TIMEOUT_MS,
+        'Timeout saat menghapus data room',
+      );
+    } catch {
+      // Sengaja diabaikan — lihat komentar di atas.
+    }
   }
 
   await clearSessionData();
@@ -289,12 +333,17 @@ export async function performLogout(): Promise<void> {
 
 // ─── Toggle location sharing ──────────────────────────────────────
 export function toggleSharing(): void {
-  const { sharingOn, myId, roomId } = getState();
+  const { sharingOn, myId, roomId, offlineMode } = getState();
   const next = !sharingOn;
   useStore.getState().set({ sharingOn: next });
 
+  // Navigasi offline murni lokal — tidak ada room Firebase untuk ditulisi.
+  if (offlineMode) return;
+
   if (db && myId && roomId) {
-    set(ref(db, `rooms/${roomId}/members/${myId}/sharing`), next);
+    // Fire-and-forget: sharingOn lokal sudah benar di atas. .catch() cuma
+    // jaga-jaga supaya kalau gagal/offline, tidak jadi unhandled rejection.
+    set(ref(db, `rooms/${roomId}/members/${myId}/sharing`), next).catch(() => {});
   }
 }
 
