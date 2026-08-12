@@ -109,8 +109,12 @@ export async function startTracking(name: string): Promise<{
   }
 
   const myId = genId();
-  const { colorIdx, myColor: savedColor, myEmoji, myName: savedName } = getState();
-  const myColor = savedColor || COLORS[colorIdx % COLORS.length];
+  const { colorIdx, myEmoji, myName: savedName } = getState();
+  // Warna dirotasi murni lewat colorIdx (naik tiap sesi baru) — TIDAK boleh
+  // fallback ke state.myColor, karena default-nya selalu truthy (COLORS[0])
+  // sehingga rotasi ini nyaris tidak pernah benar-benar kepakai, dan semua
+  // anggota room berakhir dengan warna yang sama.
+  const myColor = COLORS[colorIdx % COLORS.length];
   const myName  = name.trim() || savedName || 'Anggota';
 
   useStore.getState().set({
@@ -129,9 +133,11 @@ export async function startTracking(name: string): Promise<{
 
 // ─── Start Offline Nav — no Firebase, no room ─────────────────────
 export function startOfflineNav() {
-  const { myId, myEmoji, myColor, colorIdx } = getState();
-  const id    = myId    || genId();
-  const color = myColor || COLORS[colorIdx % COLORS.length];
+  const { myId, myEmoji, colorIdx } = getState();
+  const id    = myId || genId();
+  // Sama seperti di startTracking(): jangan fallback ke state.myColor
+  // (selalu truthy = COLORS[0]) — pakai colorIdx murni.
+  const color = COLORS[colorIdx % COLORS.length];
 
   useStore.getState().set({
     myId:        id,

@@ -1,3 +1,4 @@
+import * as Clipboard from 'expo-clipboard';
 import { genRoomCode, sanitizeRoomCode } from './constants';
 import { useStore, getState } from './state';
 
@@ -52,8 +53,7 @@ export async function shareRoomCode(): Promise<void> {
 
 // ─── Copy room code to clipboard ─────────────────────────────────
 export async function copyRoomCode(): Promise<void> {
-  const { Clipboard } = await import('react-native');
   const { roomId } = getState();
   const code = roomId || _generatedCode;
-  Clipboard.setString(code);
+  await Clipboard.setStringAsync(code);
 }

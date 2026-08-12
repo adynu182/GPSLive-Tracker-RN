@@ -8,6 +8,14 @@ let _watchSub: Location.LocationSubscription | null = null;
 let _headingSub: Location.LocationSubscription | null = null;
 let _simInterval: ReturnType<typeof setInterval> | null = null;
 
+// Dinaikkan tiap kali startGPS()/stopGPS() dipanggil. startGPS() punya
+// beberapa titik `await` (izin lokasi, setup sensor) — kalau ada panggilan
+// startGPS()/stopGPS() LAIN yang masuk selagi menunggu salah satu await
+// itu, panggilan lama akan lihat generasinya sudah tidak cocok lagi dan
+// membatalkan diri sendiri, supaya state module (_isMoving dkk di bawah)
+// tidak tercampur antara dua sesi yang tumpang tindih.
+let _generation = 0;
+
 // ─── Heading source: GPS direction-of-travel vs. compass ────────
 // Nav mode should rotate the map to match the direction the user is
 // actually walking/driving (course-over-ground), not which way the phone
@@ -66,22 +74,29 @@ export async function requestLocationPermission(): Promise<boolean> {
 
 // ─── Start GPS tracking ───────────────────────────────────────────
 export async function startGPS(onPosition: (lat: number, lng: number, accuracy: number, heading: number | null, speed: number | null) => void): Promise<void> {
-  stopGPS(); // ensure clean state
+  stopGPS(); // ensure clean state (juga menaikkan _generation, lihat di bawah)
+  const myGeneration = _generation;
 
   const granted = await requestLocationPermission();
+  // Kalau ada startGPS()/stopGPS() lain yang terjadi selagi kita menunggu
+  // izin lokasi (mis. layar unmount lalu remount cepat), generasi ini
+  // sudah usang — batalkan diri sendiri, jangan lanjut setup sensor.
+  if (myGeneration !== _generation) return;
+
   if (!granted) {
     // Fallback to demo mode
-    startSimulatedGPS(onPosition);
+    startSimulatedGPS(onPosition, myGeneration);
     return;
   }
 
-  _watchSub = await Location.watchPositionAsync(
+  const watchSub = await Location.watchPositionAsync(
     {
       accuracy: Location.Accuracy.BestForNavigation,
       timeInterval: 2000,
       distanceInterval: 0,
     },
     (loc) => {
+      if (myGeneration !== _generation) return; // callback dari sesi startGPS() yang sudah dibatalkan
       const { latitude, longitude, accuracy, speed } = loc.coords;
 
       // Direction of travel (course-over-ground) as reported by the OS from
@@ -105,21 +120,31 @@ export async function startGPS(onPosition: (lat: number, lng: number, accuracy: 
       onPosition(latitude, longitude, accuracy ?? 20, travelHeading, speed ?? 0);
     },
   );
+  if (myGeneration !== _generation) { watchSub.remove(); return; } // dibatalkan selagi menunggu watchPositionAsync
+  _watchSub = watchSub;
 
   // Compass — fallback heading source only. While the user is actively
   // moving, GPS direction-of-travel (above) wins so the map rotates with
   // the path they're walking/driving; the compass only steers the map
   // while the user is stationary (e.g. standing still looking around).
-  _headingSub = await Location.watchHeadingAsync((heading) => {
+  const headingSub = await Location.watchHeadingAsync((heading) => {
+    if (myGeneration !== _generation) return; // callback dari sesi startGPS() yang sudah dibatalkan
     const h = heading.trueHeading >= 0 ? heading.trueHeading : heading.magHeading;
     if (h == null || isNaN(h)) return;
     if (_isMoving) return;
     useStore.getState().set({ myHeading: h });
   });
+  if (myGeneration !== _generation) { headingSub.remove(); return; } // dibatalkan selagi menunggu watchHeadingAsync
+  _headingSub = headingSub;
 }
 
 // ─── Stop GPS tracking ────────────────────────────────────────────
 export function stopGPS(): void {
+  // Naikkan generasi DULU, sebelum reset apapun — supaya startGPS() manapun
+  // yang sedang di tengah `await` langsung tahu dirinya usang begitu await
+  // itu selesai, dan membatalkan diri sendiri alih-alih menimpa state yang
+  // baru saja direset di bawah ini.
+  _generation++;
   _watchSub?.remove();
   _watchSub = null;
   _headingSub?.remove();
@@ -186,6 +211,7 @@ export function handleGPSPosition(
 // ─── Demo mode: random walk around Jakarta ───────────────────────
 function startSimulatedGPS(
   onPosition: (lat: number, lng: number, accuracy: number, heading: number | null, speed: number | null) => void,
+  myGeneration: number,
 ): void {
   let lat = -6.2 + (Math.random() - 0.5) * 0.02;
   let lng = 106.8 + (Math.random() - 0.5) * 0.02;
@@ -193,6 +219,7 @@ function startSimulatedGPS(
   let prevLng: number | null = null;
 
   const tick = () => {
+    if (myGeneration !== _generation) return; // sesi ini sudah dibatalkan (lihat startGPS/stopGPS)
     prevLat = lat; prevLng = lng;
     lat += (Math.random() - 0.5) * 0.0004;
     lng += (Math.random() - 0.5) * 0.0004;
