@@ -4,6 +4,18 @@ export const COLORS = [
   '#0f4c4a', '#3da49d', '#5bb5b0', '#7fc6c1',
 ];
 
+// Pilih warna acak dari COLORS untuk member baru. Kalau `usedColors`
+// diberikan (warna-warna yang sudah dipakai member lain di room yang
+// sama), diutamakan pilih dari sisa yang BELUM dipakai — supaya warna
+// tetap berguna membedakan orang di peta. Kalau semua warna di palet
+// sudah kepakai (member lebih banyak dari jumlah warna), baru pilih
+// benar-benar acak dari seluruh palet (tabrakan tak terhindarkan).
+export function pickRandomColor(usedColors: string[] = []): string {
+  const available = COLORS.filter((c) => !usedColors.includes(c));
+  const pool = available.length > 0 ? available : COLORS;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 // ─── Pilihan emoji untuk join form ───────────────────────────────
 export const EMOJIS = ['🧑', '👩', '🧔', '👦', '👧', '🧑‍💻', '🧑‍🎤', '🧑‍🚀', '🦊', '🐱'];
 

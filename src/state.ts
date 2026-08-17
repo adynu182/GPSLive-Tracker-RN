@@ -70,7 +70,6 @@ interface AppState {
 
   // ── Map ───────────────────────────────────────────────────────
   firstFix:    boolean;
-  colorIdx:    number;
   navMode:     boolean;
   appTheme:    'light' | 'dark';
 
@@ -134,7 +133,6 @@ const initialState: Omit<AppState, 'set' | 'recomputeMemberNumbers' | 'reset' | 
   myHeading:   null,
   mySpeed:     0,
   firstFix:    true,
-  colorIdx:    0,
   navMode:     false,
   appTheme:    'light',
   followedUid:    null,

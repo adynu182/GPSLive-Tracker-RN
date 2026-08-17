@@ -6,7 +6,7 @@ import {
 import NetInfo from '@react-native-community/netinfo';
 import { db } from './firebase';
 import { useStore, getState } from './state';
-import { COLORS, genId, safeColor } from './constants';
+import { COLORS, genId, safeColor, pickRandomColor } from './constants';
 import { saveUserData, getDeviceId } from './storage';
 import { stopGPS } from './gps';
 import { getSelectedRoomId } from './room';
@@ -92,7 +92,11 @@ export async function startTracking(name: string): Promise<{
   if (roomId.length < 4) return { ok: false, error: '⚠️ Kode room minimal 4 karakter!' };
   if (!name.trim())      return { ok: false, error: '⚠️ Masukkan nama kamu dulu!' };
 
-  // Check for duplicate name in room
+  // Satu pembacaan member room ini dipakai untuk DUA hal: cek nama yang
+  // sudah dipakai, DAN kumpulkan warna yang sudah dipakai member lain
+  // (supaya warna acak yang didapat tidak bentrok kalau memungkinkan) —
+  // tidak perlu request Firebase terpisah untuk masing-masing.
+  let existingMembers: Record<string, any> = {};
   try {
     const snapshot = await withTimeout(
       get(ref(db, `rooms/${roomId}/members`)),
@@ -100,9 +104,10 @@ export async function startTracking(name: string): Promise<{
       'Timeout saat memeriksa nama',
     );
     if (snapshot.exists()) {
+      existingMembers = snapshot.val() as Record<string, any>;
       const deviceId = await getDeviceId();
-      const isNameTaken = Object.values(snapshot.val() as Record<string, any>).some(
-        (m) => m.name && m.name.toLowerCase() === name.trim().toLowerCase() && m.deviceId !== deviceId,
+      const isNameTaken = Object.values(existingMembers).some(
+        (m: any) => m.name && m.name.toLowerCase() === name.trim().toLowerCase() && m.deviceId !== deviceId,
       );
       if (isNameTaken) {
         return { ok: false, error: '⚠️ Nama sedang aktif digunakan di room ini!' };
@@ -113,12 +118,14 @@ export async function startTracking(name: string): Promise<{
   }
 
   const myId = genId();
-  const { colorIdx, myEmoji, myName: savedName } = getState();
-  // Warna dirotasi murni lewat colorIdx (naik tiap sesi baru) — TIDAK boleh
-  // fallback ke state.myColor, karena default-nya selalu truthy (COLORS[0])
-  // sehingga rotasi ini nyaris tidak pernah benar-benar kepakai, dan semua
-  // anggota room berakhir dengan warna yang sama.
-  const myColor = COLORS[colorIdx % COLORS.length];
+  const { myEmoji, myName: savedName } = getState();
+  // Tidak ada pemilih warna di join screen — warna diberikan acak otomatis,
+  // diutamakan yang belum dipakai member lain di room ini (lihat
+  // pickRandomColor di constants.ts).
+  const usedColors = Object.values(existingMembers)
+    .map((m: any) => m.color)
+    .filter((c): c is string => typeof c === 'string');
+  const myColor = pickRandomColor(usedColors);
   const myName  = name.trim() || savedName || 'Anggota';
 
   useStore.getState().set({
@@ -127,7 +134,6 @@ export async function startTracking(name: string): Promise<{
     myColor,
     roomId,
     myJoinedAt: null,
-    colorIdx: colorIdx + 1,
   });
 
   await saveUserData({ myName, myEmoji, myColor, roomId });
@@ -145,13 +151,15 @@ export async function startTracking(name: string): Promise<{
 
 // ─── Start Offline Nav — no Firebase, no room ─────────────────────
 export function startOfflineNav() {
-  const { myEmoji, colorIdx } = getState();
+  const { myEmoji } = getState();
   // Selalu bikin id baru — JANGAN warisi myId dari percobaan startTracking()
   // yang mungkin gagal sebelumnya (kasus itu sekarang sudah di-rollback ke
   // null juga, tapi ini jaga-jaga tambahan supaya startOfflineNav() selalu
   // mulai dari keadaan bersih apapun yang terjadi sebelumnya).
   const id    = genId();
-  const color = COLORS[colorIdx % COLORS.length];
+  // Offline nav = sesi lokal sendirian, tidak ada member lain di room untuk
+  // dihindari tabrakan warnanya — pilih acak dari seluruh palet.
+  const color = pickRandomColor();
 
   useStore.getState().set({
     myId:        id,
