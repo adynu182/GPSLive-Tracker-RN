@@ -202,6 +202,25 @@ async function startSession(roomId: string, myId: string): Promise<{ ok: boolean
     await writeMyPresence(roomId, myId, true);
   } catch (err) {
     releaseWakeLock();
+    // PENTING: withTimeout() di atas cuma bikin KODE KITA berhenti
+    // menunggu — itu tidak membatalkan operasi set() Firebase yang
+    // sebenarnya. Kalau timeout ini terjadi karena benar-benar offline
+    // (bukan error lain), SDK Firebase kemungkinan besar SUDAH terlanjur
+    // mengantre write itu secara lokal, dan akan tetap mengirimnya di
+    // background begitu koneksi kembali — walau kode kita di sini sudah
+    // "menyerah" dan roomId/myId sudah di-rollback di startTracking().
+    // Tanpa antisipasi ini, write yang telat sukses itu jadi "member
+    // hantu" berisi field lengkap begitu online lagi.
+    //
+    // Kirim remove() untuk id yang sama SEKARANG, fire-and-forget (tidak
+    // ditunggu, tidak diberi timeout — tidak masalah kalau ini juga lama,
+    // karena tidak memblokir apapun). Firebase menjamin urutan antrean
+    // per client, jadi kalau set() di atas memang akhirnya benar-benar
+    // terkirim, remove() ini otomatis menyusul TEPAT setelahnya begitu
+    // online — membuang member itu sebelum sempat terlihat member lain.
+    if (db) {
+      remove(ref(db, `rooms/${roomId}/members/${myId}`)).catch(() => {});
+    }
     return { ok: false, error: '⚠️ Tidak ada koneksi internet. Coba lagi.' };
   }
 
